@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>家常菜 · Taste of Home</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <p class="eyebrow">a kueh machine</p>
+    <h1>家常菜 <span class="divider">·</span> <span class="en">Taste of Home</span></h1>
+    <p class="tagline">Learning to cook my mother's recipes, one translated memory at a time.</p>
+  </header>
+
+  <section class="connection">
+    <div class="connection-card">
+      <span class="card-tag">why this belongs here</span>
+      <div class="connection-terms">
+        <div class="connection-row">
+          <span class="connection-label"><span class="connection-term">Kueh</span> <span class="arrow">→</span></span>
+          <span class="connection-meaning">heritage</span>
+        </div>
+        <div class="connection-row">
+          <span class="connection-label"><span class="connection-term">Machine</span> <span class="arrow">→</span></span>
+          <span class="connection-meaning">the ability to recreate it, through taste</span>
+        </div>
+      </div>
+      <p class="connection-text">This project is my version of that: turning my mum's decades of cooking &mdash; held only in her hands and her own words &mdash; into something my family can relive through taste.</p>
+    </div>
+  </section>
+
+  <main>
+
+    <section id="recipes" class="section">
+      <div class="section-header-row">
+        <div>
+          <h2>The Recipes <span class="cn">食谱</span></h2>
+          <p class="section-note">Each dish, in her words, and mine.</p>
+        </div>
+        <button type="button" id="open-recipe-form" class="primary-btn">+ Add a recipe</button>
+      </div>
+
+      <div class="recipe-grid" id="recipe-grid">
+
+        <article class="recipe-card">
+          <span class="card-tag">example</span>
+          <h3>Ginger &amp; Scallion Fish <span class="cn">姜葱鱼</span></h3>
+          <p class="recipe-story">The dish she makes when someone in the family is unwell. Always steamed, never fried, "so it stays gentle on the stomach."</p>
+
+          <div class="ingredients">
+            <div class="ingredient-row">
+              <span class="her-words">"一块姜, 差不多这么大" <em>(a piece of ginger, about this big)</em></span>
+              <span class="arrow">→</span>
+              <span class="my-words">~15g ginger, julienned</span>
+            </div>
+            <div class="ingredient-row">
+              <span class="her-words">"两块钱的葱" <em>($2 worth of scallion)</em></span>
+              <span class="arrow">→</span>
+              <span class="my-words">~4 stalks scallion</span>
+            </div>
+          </div>
+
+          <p class="steps-placeholder">Steps and photos to come as I document this properly with her.</p>
+        </article>
+
+      </div>
+    </section>
+
+    <div id="recipe-form-overlay" class="form-overlay hidden">
+      <form id="recipe-form" class="recipe-form">
+        <button type="button" id="close-recipe-form" class="close-btn" aria-label="Close">×</button>
+        <h3 id="recipe-form-heading">Add a Recipe</h3>
+
+        <div class="voice-lang-toggle">
+          <span>Voice input language:</span>
+          <label><input type="radio" name="voice-lang" value="zh-CN" checked> 中文</label>
+          <label><input type="radio" name="voice-lang" value="en-SG"> English / Singlish</label>
+        </div>
+
+        <label>Dish name (English)
+          <input type="text" id="field-name-en" required>
+        </label>
+        <label>Dish name (Chinese)
+          <input type="text" id="field-name-cn">
+        </label>
+        <label>The story
+          <span class="mic-btn" data-target="field-story" title="Record with voice">🎤</span>
+          <textarea id="field-story" rows="3" placeholder="When does she make this? For whom? Why does it matter?"></textarea>
+        </label>
+
+        <div class="form-block">
+          <div class="form-block-header">
+            <span>Ingredients</span>
+            <button type="button" id="add-ingredient" class="mini-btn">+ Add ingredient</button>
+          </div>
+          <div id="ingredient-rows"></div>
+        </div>
+
+        <div class="form-block">
+          <div class="form-block-header">
+            <span>Steps</span>
+            <button type="button" id="add-step" class="mini-btn">+ Add step</button>
+          </div>
+          <div id="step-rows"></div>
+        </div>
+
+        <label>Photos / videos
+          <input type="file" id="field-media" accept="image/*,video/*" multiple>
+        </label>
+        <div id="existing-media-preview"></div>
+
+        <div class="form-actions">
+          <button type="submit" id="recipe-form-submit" class="primary-btn">Save recipe</button>
+        </div>
+      </form>
+    </div>
+
+    <section id="glossary" class="section">
+      <h2>The Glossary <span class="cn">度量对照</span></h2>
+      <p class="section-note">A running translation of the vague measurements mums everywhere seem to speak in fluently.</p>
+
+      <input type="search" id="glossary-search" class="glossary-search" placeholder="Search the glossary…">
+
+      <ul class="glossary-list" id="glossary-list"></ul>
+
+      <div class="glossary-add">
+        <input type="text" id="glossary-term" placeholder="Her phrase (e.g. 少许 or &quot;a splash&quot;)">
+        <input type="text" id="glossary-meaning" placeholder="Real measurement (e.g. ~1/4 tsp)">
+        <button type="button" id="glossary-submit" class="mini-btn">+ Add to glossary</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>Documented with love by Mei Jun <span class="divider">·</span> part of <a href="https://kuehmachine.com">kuehmachine.com</a></p>
+    <p class="utility-row">
+      Everything above lives only in this browser.
+      <button type="button" id="backup-btn" class="utility-link">Back up</button>
+      <span class="divider">·</span>
+      <button type="button" id="restore-btn" class="utility-link">Restore</button>
+      <input type="file" id="restore-file" accept=".json,application/json" hidden>
+    </p>
+  </footer>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script src="./script.js"></script>
+</body>
+</html>
