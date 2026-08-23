@@ -22,6 +22,34 @@ Noto Serif SC (handles Chinese and English gracefully), accents in Caveat, a
 handwritten-feel font, for the personal, diary-like touches. Palette: paper
 cream, deep ink brown, and a chili-red accent.
 
+## The recipes in here
+
+Three dishes documented with mum so far, built into the project rather than
+living only in one browser:
+
+- **Hainanese Yi Bua Kueh** 椰糖蒸糕 — coconut palm sugar steamed cake
+- **Orh Kueh / Yam Cake** 芋头糕 — the one she makes for family gatherings
+- **Tang Yuan / Glutinous Rice Balls** 汤圆
+
+They load automatically the first time the site is opened in any browser, in
+the order set here. Their photos are real files in `./media/`, referenced by
+relative path. Anything added, edited, reordered or deleted in the browser
+after that lives in IndexedDB and takes precedence over the built-in copies.
+
+### Updating what ships in the folder
+
+Recipes written in the browser live only in that browser. To fold new ones,
+edits or a new running order into the project itself:
+
+1. Click **Back up** in the site footer. A `taste-of-home-backup-<date>.json`
+   lands in Downloads.
+2. Run `python3 tools/build-seed.py ~/Downloads/taste-of-home-backup-<date>.json`
+
+That rewrites `media/` and `recipes-seed.js` from the backup, resizing photos
+to 1600px JPEGs so the folder stays small enough to zip. Check the result in a
+private window, which has no saved data and so shows exactly what someone
+opening the site for the first time will see.
+
 ## Features
 
 - [x] Basic page scaffold and scrapbook visual style

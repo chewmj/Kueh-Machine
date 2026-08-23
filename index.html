@@ -47,29 +47,12 @@
 
       <div class="recipe-grid" id="recipe-grid">
 
-        <article class="recipe-card">
-          <span class="card-tag">example</span>
-          <h3>Ginger &amp; Scallion Fish <span class="cn">姜葱鱼</span></h3>
-          <p class="recipe-story">The dish she makes when someone in the family is unwell. Always steamed, never fried, "so it stays gentle on the stomach."</p>
-
-          <div class="ingredients">
-            <div class="ingredient-row">
-              <span class="her-words">"一块姜, 差不多这么大" <em>(a piece of ginger, about this big)</em></span>
-              <span class="arrow">→</span>
-              <span class="my-words">~15g ginger, julienned</span>
-            </div>
-            <div class="ingredient-row">
-              <span class="her-words">"两块钱的葱" <em>($2 worth of scallion)</em></span>
-              <span class="arrow">→</span>
-              <span class="my-words">~4 stalks scallion</span>
-            </div>
-          </div>
-
-          <p class="steps-placeholder">Steps and photos to come as I document this properly with her.</p>
-        </article>
-
       </div>
     </section>
+
+    <div id="recipe-detail-overlay" class="form-overlay hidden">
+      <article id="recipe-detail" class="recipe-detail" role="dialog" aria-modal="true" aria-labelledby="recipe-detail-heading"></article>
+    </div>
 
     <div id="recipe-form-overlay" class="form-overlay hidden">
       <form id="recipe-form" class="recipe-form">
@@ -129,8 +112,8 @@
       <ul class="glossary-list" id="glossary-list"></ul>
 
       <div class="glossary-add">
-        <input type="text" id="glossary-term" placeholder="Her phrase (e.g. 少许 or &quot;a splash&quot;)">
-        <input type="text" id="glossary-meaning" placeholder="Real measurement (e.g. ~1/4 tsp)">
+        <input type="text" id="glossary-term" placeholder="Her phrase (e.g. 一点点 or &quot;a splash&quot;)">
+        <input type="text" id="glossary-meaning" placeholder="Real measurement (e.g. ~1/2 tbsp)">
         <button type="button" id="glossary-submit" class="mini-btn">+ Add to glossary</button>
       </div>
     </section>
@@ -148,8 +131,20 @@
     </p>
   </footer>
 
+  <div id="confirm-overlay" class="confirm-overlay hidden">
+    <div class="confirm-card" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-body">
+      <h3 id="confirm-title"></h3>
+      <p id="confirm-body"></p>
+      <div class="confirm-actions">
+        <button type="button" id="confirm-cancel" class="quiet-btn"></button>
+        <button type="button" id="confirm-ok" class="danger-btn"></button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
+  <script src="./recipes-seed.js"></script>
   <script src="./script.js"></script>
 </body>
 </html>

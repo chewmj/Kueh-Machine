@@ -67,8 +67,89 @@ function makeId() {
   return (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
 }
 
+/* ---------- Confirm dialog ---------- */
+
+/* Replaces window.confirm so the question is asked on the same paper as
+   everything else. Resolves true only if they pick the confirm button. */
+function askConfirm({ title, body, confirmLabel = 'Delete', cancelLabel = 'Keep it' }) {
+  const overlay = document.getElementById('confirm-overlay');
+  const okBtn = document.getElementById('confirm-ok');
+  const cancelBtn = document.getElementById('confirm-cancel');
+  const previouslyFocused = document.activeElement;
+
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-body').textContent = body;
+  okBtn.textContent = confirmLabel;
+  cancelBtn.textContent = cancelLabel;
+
+  overlay.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+  cancelBtn.focus();
+
+  return new Promise((resolve) => {
+    function finish(answer) {
+      overlay.classList.add('hidden');
+      if (document.querySelectorAll('.form-overlay:not(.hidden)').length === 0) {
+        document.body.classList.remove('modal-open');
+      }
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onBackdrop);
+      document.removeEventListener('keydown', onKey, true);
+      if (previouslyFocused && previouslyFocused.focus) previouslyFocused.focus({ preventScroll: true });
+      resolve(answer);
+    }
+
+    function onOk() { finish(true); }
+    function onCancel() { finish(false); }
+    function onBackdrop(e) { if (e.target === overlay) finish(false); }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.stopPropagation(); finish(false); }
+    }
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onBackdrop);
+    document.addEventListener('keydown', onKey, true);
+  });
+}
+
+/* ---------- Seed recipes ---------- */
+
+const SEED_FLAG = 'tasteOfHome.seededRecipes.v1';
+
+async function seedRecipesIfNeeded() {
+  if (typeof SEED_RECIPES === 'undefined') return;
+  if (localStorage.getItem(SEED_FLAG)) return;
+
+  const existing = await dbGetAll('recipes');
+  const existingIds = new Set(existing.map((r) => r.id));
+
+  for (const recipe of SEED_RECIPES) {
+    if (existingIds.has(recipe.id)) continue;
+
+    const media = [];
+    for (const item of recipe.media || []) {
+      try {
+        const response = await fetch(item.src);
+        if (!response.ok) throw new Error(response.status);
+        media.push({ id: item.id, type: item.type, name: item.name, blob: await response.blob() });
+      } catch {
+        // Opened straight off the filesystem, or a photo went missing.
+        // The recipe still saves, just without that image.
+        console.warn('Could not load seed photo', item.src);
+      }
+    }
+
+    await dbPut('recipes', { ...recipe, media });
+  }
+
+  localStorage.setItem(SEED_FLAG, '1');
+}
+
 /* ---------- Glossary ---------- */
 
+/* Used only if recipes-seed.js is missing its own glossary. */
 const DEFAULT_GLOSSARY = [
   { term: '一把 (a handful)', meaning: '~30g' },
   { term: '少许 (a little)', meaning: '~1/4 tsp' },
@@ -78,7 +159,10 @@ const DEFAULT_GLOSSARY = [
 async function seedGlossaryIfEmpty() {
   const existing = await dbGetAll('glossary');
   if (existing.length > 0) return;
-  for (const entry of DEFAULT_GLOSSARY) {
+  const entries = typeof SEED_GLOSSARY !== 'undefined' && SEED_GLOSSARY.length
+    ? SEED_GLOSSARY
+    : DEFAULT_GLOSSARY;
+  for (const entry of entries) {
     await dbPut('glossary', { id: makeId(), ...entry });
   }
 }
@@ -116,7 +200,16 @@ function setupGlossary() {
     const term = termInput.value.trim();
     const meaning = meaningInput.value.trim();
     if (!term || !meaning) return;
-    await dbPut('glossary', { id: makeId(), term, meaning });
+
+    const existing = await dbGetAll('glossary');
+    const match = existing.find((entry) => entry.term.trim().toLowerCase() === term.toLowerCase());
+    if (match) {
+      await dbPut('glossary', { ...match, meaning });
+      showToast(`Updated “${match.term}”`);
+    } else {
+      await dbPut('glossary', { id: makeId(), term, meaning });
+    }
+
     termInput.value = '';
     meaningInput.value = '';
     renderGlossary();
@@ -125,6 +218,14 @@ function setupGlossary() {
   document.getElementById('glossary-list').addEventListener('click', async (e) => {
     if (!e.target.classList.contains('delete-term')) return;
     const li = e.target.closest('li');
+    const term = li.querySelector('.term').textContent;
+    const ok = await askConfirm({
+      title: 'Take this phrase off the list?',
+      body: `"${term}" comes off the glossary. You can add it back the next time it comes up.`,
+      confirmLabel: 'Remove it',
+      cancelLabel: 'Keep it',
+    });
+    if (!ok) return;
     await dbDelete('glossary', li.dataset.id);
     renderGlossary(document.getElementById('glossary-search').value);
   });
@@ -501,10 +602,45 @@ function setupBackup() {
 
 /* ---------- Rendering recipes ---------- */
 
+/* Object URLs handed out to the current set of cards, revoked on re-render. */
+let cardObjectUrls = [];
+
+function mediaUrl(item) {
+  const url = URL.createObjectURL(item.blob);
+  cardObjectUrls.push(url);
+  return url;
+}
+
+function mediaTag(item, alt, className = '') {
+  const url = mediaUrl(item);
+  const cls = className ? ` class="${className}"` : '';
+  return item.type === 'video'
+    ? `<video${cls} src="${url}" muted playsinline></video>`
+    : `<img${cls} src="${url}" alt="${alt}">`;
+}
+
+function ingredientsHtml(recipe) {
+  return recipe.ingredients
+    .map(
+      (row) => `
+        <div class="ingredient-row">
+          <span class="her-words">${row.her}</span>
+          <span class="arrow">→</span>
+          <span class="my-words">${row.mine}</span>
+        </div>
+      `
+    )
+    .join('');
+}
+
+/* ---------- Recipe cards (preview) ---------- */
+
 async function renderRecipes() {
   const grid = document.getElementById('recipe-grid');
   const savedCards = grid.querySelectorAll('.recipe-card[data-id]');
   savedCards.forEach((card) => card.remove());
+  cardObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+  cardObjectUrls = [];
 
   let recipes = await dbGetAll('recipes');
   recipes = await ensureRecipeOrder(recipes);
@@ -512,35 +648,29 @@ async function renderRecipes() {
 
   recipes.forEach((recipe, index) => {
     const card = document.createElement('article');
-    card.className = 'recipe-card';
+    card.className = 'recipe-card recipe-card-preview';
     card.dataset.id = recipe.id;
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', `Open the full recipe for ${recipe.nameEn}`);
 
-    const ingredientsHtml = recipe.ingredients
-      .map(
-        (row) => `
-          <div class="ingredient-row">
-            <span class="her-words">${row.her}</span>
-            <span class="arrow">→</span>
-            <span class="my-words">${row.mine}</span>
-          </div>
-        `
-      )
-      .join('');
-
-    const stepsHtml = recipe.steps.length
-      ? `<ol class="steps-list">${recipe.steps.map((s) => `<li>${s}</li>`).join('')}</ol>`
+    const media = recipe.media || [];
+    const coverHtml = media.length
+      ? `<div class="card-cover">${mediaTag(media[0], recipe.nameEn)}</div>`
       : '';
 
-    const mediaHtml = recipe.media.length
-      ? `<div class="recipe-media">${recipe.media
-          .map((m) => {
-            const url = URL.createObjectURL(m.blob);
-            return m.type === 'video'
-              ? `<video src="${url}" muted></video>`
-              : `<img src="${url}" alt="${recipe.nameEn}">`;
-          })
-          .join('')}</div>`
+    const rest = media.slice(1, 5);
+    const remaining = media.length - 1 - rest.length;
+    const stripHtml = rest.length
+      ? `<div class="card-strip">
+           ${rest.map((m) => mediaTag(m, recipe.nameEn)).join('')}
+           ${remaining > 0 ? `<span class="more-count">+${remaining}</span>` : ''}
+         </div>`
       : '';
+
+    const counts = [];
+    if (recipe.ingredients.length) counts.push(`${recipe.ingredients.length} ingredients`);
+    if (recipe.steps.length) counts.push(`${recipe.steps.length} steps`);
 
     card.innerHTML = `
       <div class="card-actions">
@@ -552,21 +682,126 @@ async function renderRecipes() {
       </div>
       <h3>${recipe.nameEn} ${recipe.nameCn ? `<span class="cn">${recipe.nameCn}</span>` : ''}</h3>
       ${recipe.story ? `<p class="recipe-story">${recipe.story}</p>` : ''}
-      <div class="ingredients">${ingredientsHtml}</div>
-      ${mediaHtml}
-      ${stepsHtml}
+      ${coverHtml}
+      ${stripHtml}
+      <p class="card-open-cue">
+        <span class="cue-counts">${counts.join(' · ') || 'Not written down yet'}</span>
+        <span class="cue-link">Read the full recipe →</span>
+      </p>
     `;
 
     grid.appendChild(card);
   });
 }
 
+/* ---------- Recipe detail overlay ---------- */
+
+function openRecipeDetail(recipe) {
+  const overlay = document.getElementById('recipe-detail-overlay');
+  const panel = document.getElementById('recipe-detail');
+
+  const media = recipe.media || [];
+  const galleryHtml = media.length
+    ? `<div class="detail-gallery">${media.map((m) => mediaTag(m, recipe.nameEn)).join('')}</div>`
+    : '';
+
+  const stepsHtml = recipe.steps.length
+    ? `<div class="detail-block">
+         <h4>Steps <span class="cn">做法</span></h4>
+         <ol class="steps-list">${recipe.steps.map((s) => `<li>${s}</li>`).join('')}</ol>
+       </div>`
+    : '';
+
+  const ingredientsBlock = recipe.ingredients.length
+    ? `<div class="detail-block">
+         <h4>Ingredients <span class="cn">材料</span></h4>
+         <p class="detail-note">Her words, and the measurements I landed on.</p>
+         <div class="ingredients">${ingredientsHtml(recipe)}</div>
+       </div>`
+    : '';
+
+  const nothingYet = !recipe.ingredients.length && !recipe.steps.length
+    ? '<p class="steps-placeholder">Still to be written down properly with her.</p>'
+    : '';
+
+  panel.innerHTML = `
+    <button type="button" id="close-recipe-detail" class="close-btn" aria-label="Close">×</button>
+    <h3 id="recipe-detail-heading">${recipe.nameEn} ${recipe.nameCn ? `<span class="cn">${recipe.nameCn}</span>` : ''}</h3>
+    ${recipe.story ? `<p class="recipe-story">${recipe.story}</p>` : ''}
+    ${galleryHtml}
+    ${ingredientsBlock}
+    ${stepsHtml}
+    ${nothingYet}
+    <div class="detail-actions">
+      <button type="button" class="mini-btn detail-share">📤 Share</button>
+      <button type="button" class="mini-btn detail-edit">✎ Edit this recipe</button>
+    </div>
+  `;
+
+  panel.dataset.id = recipe.id;
+  panel.scrollTop = 0;
+  overlay.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+  panel.tabIndex = -1;
+  panel.focus({ preventScroll: true });
+}
+
+function closeRecipeDetail() {
+  const overlay = document.getElementById('recipe-detail-overlay');
+  overlay.classList.add('hidden');
+  document.getElementById('recipe-detail').innerHTML = '';
+  document.body.classList.remove('modal-open');
+}
+
+function setupRecipeDetail() {
+  const overlay = document.getElementById('recipe-detail-overlay');
+
+  overlay.addEventListener('click', async (e) => {
+    if (e.target === overlay || e.target.id === 'close-recipe-detail') {
+      closeRecipeDetail();
+      return;
+    }
+    const panel = document.getElementById('recipe-detail');
+    if (e.target.classList.contains('detail-edit')) {
+      const recipe = await dbGet('recipes', panel.dataset.id);
+      closeRecipeDetail();
+      openRecipeForm(recipe);
+    } else if (e.target.classList.contains('detail-share')) {
+      const recipe = await dbGet('recipes', panel.dataset.id);
+      shareRecipe(recipe);
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !overlay.classList.contains('hidden')) closeRecipeDetail();
+  });
+}
+
 function setupRecipeCardActions() {
-  document.getElementById('recipe-grid').addEventListener('click', async (e) => {
+  const grid = document.getElementById('recipe-grid');
+
+  grid.addEventListener('keydown', async (e) => {
+    const card = e.target.closest('.recipe-card[data-id]');
+    if (!card || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault();
+    const recipe = await dbGet('recipes', card.dataset.id);
+    if (recipe) openRecipeDetail(recipe);
+  });
+
+  grid.addEventListener('click', async (e) => {
     const card = e.target.closest('.recipe-card[data-id]');
     if (!card) return;
 
     if (e.target.classList.contains('delete-recipe')) {
+      const recipe = await dbGet('recipes', card.dataset.id);
+      const name = recipe ? recipe.nameEn : 'this recipe';
+      const ok = await askConfirm({
+        title: 'Delete this recipe?',
+        body: `"${name}" goes for good: her words, the steps, and every photo on the card. If it isn't in a backup file, there's no other copy.`,
+        confirmLabel: 'Delete it',
+        cancelLabel: 'Keep it',
+      });
+      if (!ok) return;
       await dbDelete('recipes', card.dataset.id);
       renderRecipes();
     } else if (e.target.classList.contains('edit-recipe')) {
@@ -578,6 +813,9 @@ function setupRecipeCardActions() {
     } else if (e.target.classList.contains('share-recipe')) {
       const recipe = await dbGet('recipes', card.dataset.id);
       shareRecipe(recipe);
+    } else if (!e.target.closest('.card-actions')) {
+      const recipe = await dbGet('recipes', card.dataset.id);
+      if (recipe) openRecipeDetail(recipe);
     }
   });
 }
@@ -632,11 +870,13 @@ function setupVoiceInput() {
 
 async function init() {
   await seedGlossaryIfEmpty();
+  await seedRecipesIfNeeded();
   setupGlossary();
   renderGlossary();
 
   setupRecipeForm();
   setupRecipeCardActions();
+  setupRecipeDetail();
   setupVoiceInput();
   setupBackup();
   renderRecipes();
