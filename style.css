@@ -69,8 +69,11 @@ a {
 .tagline {
   font-family: var(--font-hand);
   font-size: 1.5rem;
+  line-height: 1.35;
   color: var(--ink-soft);
-  max-width: 32ch;
+  /* Narrow enough that the line breaks after "recipes," rather than
+     stranding "one" at the end of the first line. */
+  max-width: 30ch;
   margin: 0 auto;
 }
 
@@ -138,6 +141,14 @@ a {
   font-weight: 600;
 }
 
+.connection-sign {
+  margin: 0.75rem 0 0;
+  text-align: right;
+  font-family: var(--font-hand);
+  font-size: 1.25rem;
+  color: var(--ink-soft);
+}
+
 .connection-text {
   font-size: 0.95rem;
   color: var(--ink-soft);
@@ -195,14 +206,38 @@ a {
 }
 
 .mini-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-family: var(--font-body);
   font-size: 0.85rem;
   background: transparent;
   color: var(--accent);
   border: 1px solid var(--accent);
   border-radius: 999px;
-  padding: 0.3rem 0.8rem;
+  padding: 0.35rem 0.85rem;
   cursor: pointer;
+  /* The label stays on one line; the row wraps between buttons instead. */
+  white-space: nowrap;
+}
+
+/* One focus ring for the whole project, instead of the browser's blue one. */
+.mini-btn:focus-visible,
+.primary-btn:focus-visible,
+.quiet-btn:focus-visible,
+.danger-btn:focus-visible,
+.utility-link:focus-visible,
+.card-actions button:focus-visible,
+.mic-btn:focus-visible,
+.remove-row:focus-visible,
+.remove-media:focus-visible,
+.edit-term:focus-visible,
+.delete-term:focus-visible,
+.close-btn:focus-visible,
+.viewer-nav:focus-visible {
+  outline: 2px solid var(--accent-soft);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 
 .mini-btn:hover {
@@ -263,6 +298,12 @@ body.modal-open {
   margin-top: 1.1rem;
 }
 
+/* Only the wrappers that follow a label need the gap; the ones inside
+   ingredient and step rows must sit flush so the row stays aligned. */
+.recipe-form label > .field-with-mic {
+  margin-top: 0.35rem;
+}
+
 .recipe-form input[type="text"],
 .recipe-form input[type="search"],
 .recipe-form textarea {
@@ -276,6 +317,13 @@ body.modal-open {
   border: 1px solid var(--line);
   border-radius: 3px;
   padding: 0.5rem 0.6rem;
+}
+
+/* Comes after the rule above so it wins the tie: a field inside a mic wrapper
+   takes its spacing from the wrapper. */
+.recipe-form .field-with-mic input,
+.recipe-form .field-with-mic textarea {
+  margin-top: 0;
 }
 
 .close-btn {
@@ -295,27 +343,6 @@ body.modal-open {
   cursor: pointer;
 }
 
-.voice-lang-toggle {
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
-  background: var(--paper);
-  border-radius: 3px;
-  padding: 0.5rem 0.8rem;
-  margin-top: 1rem;
-}
-
-.voice-lang-toggle label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin: 0;
-  color: var(--ink);
-}
-
 .form-block {
   margin-top: 1.3rem;
 }
@@ -332,7 +359,7 @@ body.modal-open {
 .step-row-input {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.3rem;
   margin-top: 0.5rem;
 }
 
@@ -348,21 +375,73 @@ body.modal-open {
   min-width: 0;
 }
 
+/* The mic sits inside its own field, the way the icons sit inside a card. */
+.field-with-mic {
+  position: relative;
+  /* Flex so the wrapper is exactly as tall as the field it holds; as a block
+     it picked up line-box space and threw the icon off centre. */
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.field-with-mic > input,
+.field-with-mic > textarea {
+  flex: 1 1 auto;
+}
+
+/* Selectors specific enough to beat .recipe-form input[type="text"], which
+   otherwise resets the padding and lets the text run under the mic. */
+.field-with-mic input,
+.field-with-mic textarea,
+.recipe-form .field-with-mic input[type="text"],
+.recipe-form .field-with-mic textarea {
+  width: 100%;
+  padding-right: 2.6rem;
+}
+
 .mic-btn {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.4rem;
-  height: 2.4rem;
-  background: var(--paper);
-  border: 1px solid var(--accent-soft);
-  border-radius: 50%;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 3px;
+  color: var(--ink-soft);
   cursor: pointer;
-  flex-shrink: 0;
-  font-size: 1.05rem;
+}
+
+/* A textarea grows downwards, so the mic keeps to the top corner. */
+.field-with-mic-area .mic-btn {
+  top: 0.45rem;
+  transform: none;
+}
+
+.mic-btn svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.mic-btn:hover {
+  color: var(--accent);
+  background: rgba(183, 71, 42, 0.08);
 }
 
 .mic-btn.listening {
+  color: var(--paper-card);
   background: var(--accent);
   animation: pulse 1s infinite;
 }
@@ -378,9 +457,28 @@ body.modal-open {
   50% { box-shadow: 0 0 0 6px rgba(183, 71, 42, 0); }
 }
 
+.remove-row svg,
+.media-row .remove-media svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.remove-row:hover,
+.media-row .remove-media:hover {
+  color: var(--accent);
+  background: rgba(183, 71, 42, 0.08);
+  border-radius: 3px;
+}
+
 .remove-row {
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 1.85rem;
+  height: 1.85rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -533,6 +631,131 @@ body.modal-open {
   position: relative;
 }
 
+.media-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.drag-handle {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.4rem 0.2rem;
+  cursor: grab;
+  /* Stops the page scrolling under a finger mid-drag. */
+  touch-action: none;
+}
+
+.drag-handle:hover {
+  color: var(--accent);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.drag-handle:focus-visible {
+  outline: 2px solid var(--accent-soft);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.media-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--paper);
+  border: 1px dashed var(--line);
+  border-radius: 2px;
+  padding: 0.6rem 0.7rem;
+}
+
+.ingredient-row-input.dragging,
+.step-row-input.dragging,
+.media-row.dragging {
+  background: var(--paper-card);
+  border: 1px solid var(--accent-soft);
+  border-radius: 2px;
+  box-shadow: 0 8px 18px rgba(58, 42, 30, 0.2);
+  opacity: 0.95;
+}
+
+.ingredient-row-input.dragging,
+.step-row-input.dragging {
+  padding: 0.3rem 0.4rem;
+}
+
+.media-row .media-thumb img,
+.media-row .media-thumb video,
+.media-row .media-thumb .audio-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 2px;
+  font-size: 1.2rem;
+}
+
+.media-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.media-name-input,
+.media-desc-input {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--paper-card);
+  color: var(--ink);
+  width: 100%;
+}
+
+.media-desc-input {
+  color: var(--ink-soft);
+}
+
+.media-name-input:focus,
+.media-desc-input:focus {
+  outline: none;
+  border-color: var(--accent-soft);
+}
+
+.media-row .remove-media {
+  position: static;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  /* Borderless like every other icon button; without this it fell back to
+     the browser's default button chrome. */
+  background: none;
+  border: none;
+  border-radius: 3px;
+  box-shadow: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.audio-note {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-bottom: 0.5rem;
+}
+
 .media-thumb .remove-media {
   position: absolute;
   top: -7px;
@@ -558,15 +781,15 @@ body.modal-open {
 
 .card-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 0.15rem;
-  margin: -0.9rem -0.7rem 0.5rem auto;
+  gap: 0;
+  margin: -0.9rem -0.5rem 0.5rem;
 }
 
 .card-actions button {
-  width: 2.1rem;
-  height: 2.1rem;
+  width: 1.85rem;
+  height: 1.85rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -588,8 +811,51 @@ body.modal-open {
   cursor: default;
 }
 
-.card-actions .move-recipe {
-  font-size: 0.8rem;
+.card-actions svg,
+.mini-btn svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* Clicks land on the button, not the artwork inside it. */
+  pointer-events: none;
+}
+
+.card-actions .drag-recipe {
+  cursor: grab;
+  /* Keeps the page from scrolling under a finger mid-drag. */
+  touch-action: none;
+  margin-right: auto;
+}
+
+.card-actions .drag-recipe:active {
+  cursor: grabbing;
+}
+
+.grip-icon {
+  fill: currentColor;
+  stroke: none;
+}
+
+.recipe-card.dragging {
+  transform: rotate(-1deg) scale(1.02);
+  box-shadow: 0 16px 32px rgba(58, 42, 30, 0.28);
+  opacity: 0.97;
+  cursor: grabbing;
+  z-index: 3;
+}
+
+.recipe-grid .recipe-card.dragging:nth-child(even) {
+  transform: rotate(1deg) scale(1.02);
+}
+
+.mini-btn svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
 }
 
 /* ---------- Recipe card previews ---------- */
@@ -679,6 +945,46 @@ body.modal-open {
   text-decoration: underline;
 }
 
+.thumb-wrap {
+  position: relative;
+  display: inline-flex;
+  line-height: 0;
+}
+
+.play-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--paper-card);
+  font-size: 0.9rem;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  background: rgba(58, 42, 30, 0.18);
+  pointer-events: none;
+}
+
+.card-cover .thumb-wrap {
+  display: block;
+  width: 100%;
+}
+
+.card-cover .play-badge {
+  font-size: 1.6rem;
+}
+
+.audio-thumb {
+  width: 84px;
+  height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  background: var(--paper);
+  border: 1px dashed var(--line);
+  border-radius: 2px;
+}
+
 /* ---------- Recipe detail overlay ---------- */
 
 .recipe-detail:focus {
@@ -733,11 +1039,36 @@ body.modal-open {
 
 .detail-gallery img,
 .detail-gallery video {
+  display: block;
   width: 100%;
   height: 150px;
   object-fit: cover;
   border-radius: 2px;
   box-shadow: 0 3px 8px rgba(58, 42, 30, 0.18);
+}
+
+/* A video sits in the grid as a thumbnail, then takes the full row to play. */
+.detail-gallery .gallery-item {
+  position: relative;
+}
+
+.detail-gallery .gallery-item.video {
+  cursor: pointer;
+}
+
+.detail-gallery .gallery-item.video .thumb-wrap {
+  display: block;
+  width: 100%;
+}
+
+.detail-gallery .gallery-item.video:hover .play-badge,
+.detail-gallery .gallery-item.video:focus-visible .play-badge {
+  background: rgba(183, 71, 42, 0.35);
+}
+
+.detail-gallery .gallery-item.video:focus-visible {
+  outline: 2px solid var(--accent-soft);
+  outline-offset: 2px;
 }
 
 .detail-block {
@@ -771,10 +1102,43 @@ body.modal-open {
   margin-bottom: 0.6rem;
 }
 
+.audio-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.audio-list li {
+  background: var(--paper);
+  border: 1px dashed var(--line);
+  border-radius: 2px;
+  padding: 0.75rem 0.9rem;
+}
+
+.audio-name {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-bottom: 0.5rem;
+  word-break: break-word;
+}
+
+.audio-list audio {
+  width: 100%;
+  display: block;
+}
+
+/* Room to breathe before the buttons, so they read as a footer to the
+   recipe rather than one more step. */
 .detail-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.6rem;
-  padding-top: 1rem;
+  margin-top: 2.25rem;
+  padding-top: 1.5rem;
   border-top: 1px dashed var(--line);
 }
 
@@ -879,27 +1243,268 @@ body.modal-open {
   background: #9c3a22;
 }
 
+/* ---------- Media viewer ---------- */
+
+.media-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(58, 42, 30, 0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  z-index: 150;
+}
+
+.media-overlay.hidden {
+  display: none;
+}
+
+.media-frame {
+  position: relative;
+  margin: 0;
+  background: var(--paper-card);
+  padding: 1rem 1rem 0.75rem;
+  border-radius: 2px;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.32);
+  transform: rotate(-0.4deg);
+  max-width: 760px;
+  width: 100%;
+}
+
+.media-frame::before {
+  content: '';
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 86px;
+  height: 22px;
+  background: var(--tape);
+  opacity: 0.85;
+}
+
+.media-holder {
+  overflow: hidden;
+  max-height: 72vh;
+  background: var(--paper);
+  border-radius: 2px;
+}
+
+.media-holder img,
+.media-holder video {
+  display: block;
+  width: 100%;
+  max-height: 72vh;
+  object-fit: contain;
+  background: var(--ink);
+  border-radius: 2px;
+}
+
+.media-holder img {
+  background: var(--paper);
+  cursor: zoom-in;
+}
+
+.media-frame figcaption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.6rem;
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+  padding-right: 2.2rem;
+}
+
+.media-frame figcaption .caption-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  word-break: break-word;
+}
+
+.media-description {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.media-overlay.fullpage .media-description {
+  color: rgba(243, 232, 214, 0.6);
+}
+
+.media-counter {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.media-frame .close-btn {
+  top: -0.4rem;
+  right: -0.4rem;
+  background: var(--paper-card);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(58, 42, 30, 0.28);
+}
+
+.viewer-nav {
+  flex: 0 0 auto;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: none;
+  border-radius: 50%;
+  background: rgba(251, 244, 230, 0.85);
+  color: var(--ink);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(58, 42, 30, 0.25);
+}
+
+.viewer-nav:hover {
+  background: var(--paper-card);
+  color: var(--accent);
+}
+
+.viewer-nav[hidden] {
+  display: none;
+}
+
+/* Full page: clicking the photo drops the frame and fills the window. */
+.media-overlay.fullpage {
+  background: rgba(38, 27, 19, 0.94);
+  padding: 3.5rem 4.5rem 4.5rem;
+}
+
+.media-overlay.fullpage .media-frame {
+  position: static;
+  background: none;
+  box-shadow: none;
+  transform: none;
+  padding: 0;
+  max-width: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+}
+
+.media-overlay.fullpage .media-frame::before {
+  display: none;
+}
+
+.media-overlay.fullpage .media-holder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  max-width: 100%;
+  max-height: calc(100vh - 9rem);
+}
+
+.media-overlay.fullpage .media-holder img {
+  width: auto;
+  max-width: 100%;
+  max-height: calc(100vh - 10rem);
+  cursor: zoom-out;
+  border: 6px solid var(--paper-card);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+}
+
+.media-overlay.fullpage figcaption .caption-text {
+  align-items: center;
+  text-align: center;
+}
+
+.media-overlay.fullpage figcaption {
+  justify-content: center;
+  gap: 1.25rem;
+  padding-right: 0;
+  color: rgba(243, 232, 214, 0.75);
+}
+
+.media-overlay.fullpage .media-counter {
+  color: rgba(243, 232, 214, 0.55);
+}
+
+.media-overlay.fullpage .close-btn {
+  position: fixed;
+  top: 0.75rem;
+  right: 1rem;
+  width: 3rem;
+  height: 3rem;
+  color: var(--paper);
+  background: rgba(251, 244, 230, 0.12);
+  font-size: 1.8rem;
+  box-shadow: none;
+  z-index: 2;
+}
+
+.media-overlay.fullpage .close-btn:hover {
+  background: var(--accent);
+  color: var(--paper-card);
+}
+
+.media-overlay.fullpage .viewer-nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3rem;
+  height: 3rem;
+  background: rgba(251, 244, 230, 0.12);
+  color: var(--paper);
+  font-size: 1.8rem;
+  box-shadow: none;
+  z-index: 2;
+}
+
+.media-overlay.fullpage .viewer-nav.prev {
+  left: 1rem;
+}
+
+.media-overlay.fullpage .viewer-nav.next {
+  right: 1rem;
+}
+
+.media-overlay.fullpage .viewer-nav:hover {
+  background: var(--accent);
+  color: var(--paper-card);
+}
+
 /* ---------- Glossary ---------- */
 
+/* One pasted-in sheet with ruled lines, rather than a stack of loose cards. */
 .glossary-list {
   list-style: none;
   padding: 0;
-  margin: 1.5rem 0 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  margin: 0.75rem 0 0;
+  background: var(--paper-card);
+  border-radius: 2px;
+  box-shadow: 0 4px 12px rgba(58, 42, 30, 0.1);
+  overflow: hidden;
 }
 
 .glossary-list li {
+  position: relative;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.6rem;
-  background: var(--paper-card);
-  padding: 0.75rem 1.1rem;
-  border-radius: 2px;
-  box-shadow: 0 3px 8px rgba(58, 42, 30, 0.08);
+  padding: 0.9rem 1.1rem;
+  /* Room for the two buttons pinned in the corner. */
+  padding-right: 4.4rem;
+  border-bottom: 1px dashed var(--line);
   font-size: 0.95rem;
+}
+
+.glossary-list li:last-child {
+  border-bottom: none;
 }
 
 .term em {
@@ -914,49 +1519,189 @@ body.modal-open {
   margin-right: auto;
 }
 
+/* Pinned to the row's top right, so a phrase that wraps onto two lines never
+   pushes them onto a line of their own. */
+/* Same sizing and zero gap as the icon row on a recipe card. */
+.glossary-list li:not(.editing) .edit-term,
+.glossary-list li:not(.editing) .delete-term {
+  position: absolute;
+  top: 0.6rem;
+  width: 1.85rem;
+  height: 1.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 3px;
+}
+
+.glossary-list li:not(.editing) .edit-term {
+  /* A hair tighter than the recipe cards: the icons read as one pair. */
+  right: 2.15rem;
+}
+
+.glossary-list li:not(.editing) .delete-term {
+  right: 0.5rem;
+}
+
+.glossary-list .edit-term:hover,
+.glossary-list .delete-term:hover {
+  color: var(--accent);
+  background: rgba(183, 71, 42, 0.08);
+}
+
+.glossary-list .edit-term svg,
+.glossary-list .delete-term svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.glossary-list .edit-term,
 .glossary-list .delete-term {
   background: none;
   border: none;
   color: var(--ink-soft);
-  font-size: 1.1rem;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.2rem 0.25rem;
   cursor: pointer;
+}
+
+.glossary-list .edit-term:hover {
+  color: var(--accent);
+}
+
+.glossary-list li.editing {
+  gap: 0.5rem;
+  padding-right: 1.1rem;
+  background: var(--paper);
+  outline: 1px solid var(--accent-soft);
+  outline-offset: -1px;
+}
+
+.edit-input {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--paper);
+  color: var(--ink);
+  flex: 1;
+  min-width: 140px;
+}
+
+.edit-input:focus {
+  outline: none;
+  border-color: var(--accent-soft);
+}
+
+.edit-meaning-input {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.glossary-list .cancel-edit {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.3rem;
+}
+
+.glossary-list .save-term {
+  padding: 0.3rem 0.9rem;
 }
 
 .glossary-list .delete-term:hover {
   color: var(--accent);
 }
 
+/* Search field with the magnifier tucked inside it. */
+.glossary-search-field {
+  position: relative;
+  margin-top: 1.5rem;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
 .glossary-search {
   display: block;
   width: 100%;
-  max-width: 320px;
-  margin-top: 1.25rem;
   font-family: var(--font-body);
   font-size: 0.9rem;
-  padding: 0.5rem 0.7rem;
+  padding: 0.6rem 0.8rem 0.6rem 2.3rem;
   border: 1px solid var(--line);
   border-radius: 3px;
   background: var(--paper-card);
   color: var(--ink);
 }
 
+.glossary-search:focus {
+  outline: none;
+  border-color: var(--accent-soft);
+}
+
+/* Adding a phrase is always in reach: one line, under the search. */
 .glossary-add {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
-  margin-top: 1.5rem;
+  margin-top: 1.1rem;
 }
 
 .glossary-add input {
   font-family: var(--font-body);
   font-size: 0.9rem;
-  padding: 0.5rem 0.7rem;
+  padding: 0.6rem 0.8rem;
   border: 1px solid var(--line);
   border-radius: 3px;
   background: var(--paper-card);
   color: var(--ink);
   flex: 1;
-  min-width: 160px;
+  min-width: 180px;
+}
+
+.glossary-add input:focus {
+  outline: none;
+  border-color: var(--accent-soft);
+}
+
+.glossary-add .mini-btn {
+  flex: 0 0 auto;
+  padding: 0.4rem 1rem;
+}
+
+.glossary-count {
+  margin: 1.1rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.glossary-empty {
+  justify-content: center;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.glossary-count {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
 }
 
 /* ---------- Footer ---------- */
@@ -1053,6 +1798,8 @@ body.modal-open {
   .recipe-form textarea,
   .ingredient-row-input input,
   .step-row-input input,
+  .media-name-input,
+  .media-desc-input,
   .glossary-search,
   .glossary-add input {
     font-size: 16px;
@@ -1069,15 +1816,51 @@ body.modal-open {
     border-radius: 0;
   }
 
-  .ingredient-row-input,
+  /* Two half-width fields can't hold their text on a phone, so her words and
+     your translation stack, with the handle and bin spanning both. */
+  .ingredient-row-input {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    /* The handle and bin sit on the first line, centred to it, rather than
+       floating between the two fields. */
+    grid-template-areas:
+      "handle her  bin"
+      ".      mine .";
+    column-gap: 0.3rem;
+    row-gap: 0.35rem;
+    align-items: center;
+  }
+
+  .ingredient-row-input .drag-handle {
+    grid-area: handle;
+  }
+
+  .ingredient-row-input .field-with-mic:nth-of-type(1) {
+    grid-area: her;
+  }
+
+  .ingredient-row-input .field-with-mic:nth-of-type(2) {
+    grid-area: mine;
+  }
+
+  .ingredient-row-input .remove-row {
+    grid-area: bin;
+  }
+
+  /* Stacked pairs run together otherwise: a hairline marks where one
+     ingredient ends and the next begins. */
+  .ingredient-row-input + .ingredient-row-input {
+    border-top: 1px dashed var(--line);
+    padding-top: 0.7rem;
+    margin-top: 0.7rem;
+  }
+
   .step-row-input {
     flex-wrap: wrap;
   }
 
-  .ingredient-row-input input,
   .step-row-input input {
     min-width: 0;
-    flex-basis: 100%;
   }
 
   .recipe-grid {
@@ -1112,6 +1895,20 @@ body.modal-open {
     border-radius: 0;
   }
 
+  /* Labels stay: the icons alone don't say what they do. Buttons keep their
+     own width and wrap onto a second line rather than stretching. */
+  .detail-actions .mini-btn {
+    padding: 0.45rem 0.85rem;
+    /* Shrinks with the screen so three pills still fit two tidy rows on a
+       320px phone, without going below a readable size. */
+    font-size: clamp(0.75rem, 0.62rem + 1.1vw, 0.85rem);
+  }
+
+  .detail-actions .mini-btn svg {
+    width: 0.9rem;
+    height: 0.9rem;
+  }
+
   .recipe-detail::before {
     display: none;
   }
@@ -1130,15 +1927,183 @@ body.modal-open {
     padding: 2rem 1.25rem 1.25rem;
   }
 
+  .media-overlay {
+    padding: 1rem 0.5rem;
+    gap: 0.25rem;
+  }
+
+  .media-frame {
+    transform: none;
+    padding: 0.75rem 0.75rem 0.6rem;
+  }
+
+  .media-frame::before {
+    display: none;
+  }
+
+  .viewer-nav {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.3rem;
+  }
+
+  .media-overlay.fullpage {
+    padding: 3.25rem 0.5rem 4rem;
+  }
+
+  .media-overlay.fullpage .media-holder img {
+    max-height: calc(100vh - 9rem);
+    border-width: 4px;
+  }
+
+  .media-overlay.fullpage .viewer-nav {
+    top: auto;
+    bottom: 0.75rem;
+    transform: none;
+    width: 2.6rem;
+    height: 2.6rem;
+    font-size: 1.5rem;
+  }
+
   .glossary-add {
-    flex-direction: column;
+    margin-top: 1.4rem;
   }
 
   .glossary-add input {
+    flex-basis: 100%;
     min-width: 0;
+  }
+
+  /* Stretched to full width, the label needs centring or it sits off to
+     the left of the pill. */
+  .glossary-add .mini-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.6rem 1rem;
   }
 
   .glossary-list li {
     font-size: 0.9rem;
+  }
+}
+
+/* ---------- Print / Save as PDF ---------- */
+
+@media print {
+  /* Everything but the open recipe steps aside, so the sheet is the recipe. */
+  body {
+    background: #fff;
+    padding: 0;
+    color: #2c2118;
+  }
+
+  .site-header,
+  .connection,
+  .section,
+  .site-footer,
+  .toast,
+  .form-overlay,
+  .confirm-overlay,
+  .media-overlay,
+  #recipe-form-overlay {
+    display: none !important;
+  }
+
+  #recipe-detail-overlay.hidden {
+    display: none !important;
+  }
+
+  #recipe-detail-overlay {
+    display: block !important;
+    position: static;
+    inset: auto;
+    background: none;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .recipe-detail {
+    max-width: none;
+    width: auto;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    transform: none;
+    border-radius: 0;
+  }
+
+  .recipe-detail::before,
+  .recipe-detail .close-btn,
+  .detail-actions {
+    display: none !important;
+  }
+
+  .recipe-detail h3 {
+    font-size: 20pt;
+    margin-bottom: 0.4rem;
+  }
+
+  .recipe-detail .recipe-story {
+    font-size: 11pt;
+  }
+
+  .detail-gallery {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+  }
+
+  .detail-gallery img {
+    height: 95pt;
+    /* No dark mat on paper. */
+    background: none;
+    box-shadow: none;
+    border: 1px solid #e0d6c4;
+  }
+
+  /* Neither of these can print, so they stay in the browser. */
+  .detail-gallery .gallery-item.video,
+  .audio-list,
+  .detail-block:has(.audio-list) {
+    display: none !important;
+  }
+
+  /* Let long blocks flow onto the next sheet, but never split a single
+     ingredient, step or photo across the fold. */
+  .ingredient-row,
+  .steps-list li,
+  .gallery-item {
+    break-inside: avoid;
+  }
+
+  .detail-block h4 {
+    break-after: avoid;
+  }
+
+  .detail-block h4 {
+    font-size: 13pt;
+  }
+
+  .ingredients,
+  .steps-list {
+    font-size: 10.5pt;
+  }
+
+  .my-words {
+    color: #8f3a22;
+  }
+
+  /* A quiet line at the end so a printed page still says where it came from. */
+  .recipe-detail::after {
+    content: '家常菜 · Taste of Home · kuehmachine.com';
+    display: block;
+    margin-top: 1.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #d8ccb8;
+    font-size: 8.5pt;
+    color: #6b5a48;
+  }
+
+  @page {
+    margin: 16mm;
   }
 }
