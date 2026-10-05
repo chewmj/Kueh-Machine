@@ -1000,6 +1000,110 @@ function shareFileName(item) {
   return `${base}.${ext}`;
 }
 
+/* ---------- Recipe card as PDF ---------- */
+
+/* A one-page PDF built by hand around the card drawn as a JPEG: an image
+   filling the page, plus a link annotation over the "Open this recipe online"
+   line so it can be tapped in a PDF viewer. Small enough not to need a PDF
+   library. */
+function cardPdf(jpegBytes, width, height, link, title) {
+  const enc = new TextEncoder();
+  const pageW = 595.28; // A4 width in points; the page is as long as the card
+  const scale = pageW / width;
+  const pageH = height * scale;
+  const n = (v) => Number(v.toFixed(2));
+
+  /* PDF strings: titles as UTF-16 hex (Chinese survives), URLs escaped. */
+  const utf16Hex = (str) => {
+    let hex = 'FEFF';
+    for (const ch of str) {
+      const code = ch.codePointAt(0);
+      if (code > 0xffff) {
+        const c = code - 0x10000;
+        hex += (0xd800 + (c >> 10)).toString(16).padStart(4, '0');
+        hex += (0xdc00 + (c & 0x3ff)).toString(16).padStart(4, '0');
+      } else {
+        hex += code.toString(16).padStart(4, '0');
+      }
+    }
+    return `<${hex.toUpperCase()}>`;
+  };
+  const pdfString = (str) => `(${encodeURI(decodeURI(str)).replace(/[\\()]/g, (c) => `\\${c}`)})`;
+
+  const content = `q ${n(pageW)} 0 0 ${n(pageH)} 0 0 cm /Card Do Q`;
+  const annots = link ? ' /Annots [6 0 R]' : '';
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${n(pageW)} ${n(pageH)}] /Resources << /XObject << /Card 4 0 R >> >> /Contents 5 0 R${annots} >>`,
+    [`<< /Type /XObject /Subtype /Image /Width ${width} /Height ${height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`, jpegBytes, '\nendstream'],
+    `<< /Length ${enc.encode(content).length} >>\nstream\n${content}\nendstream`,
+    link
+      ? `<< /Type /Annot /Subtype /Link /Border [0 0 0] /Rect [${n(link.left * scale)} ${n(pageH - link.bottom * scale)} ${n(link.right * scale)} ${n(pageH - link.top * scale)}] /A << /S /URI /URI ${pdfString(link.url)} >> >>`
+      : '<< >>',
+    `<< /Title ${utf16Hex(title)} /Creator (Taste of Home, kuehmachine.com) >>`,
+  ];
+
+  const parts = [];
+  let length = 0;
+  const push = (chunk) => {
+    const bytes = typeof chunk === 'string' ? enc.encode(chunk) : chunk;
+    parts.push(bytes);
+    length += bytes.length;
+  };
+  push('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+  const offsets = [];
+  objects.forEach((body, i) => {
+    offsets.push(length);
+    push(`${i + 1} 0 obj\n`);
+    (Array.isArray(body) ? body : [body]).forEach(push);
+    push('\nendobj\n');
+  });
+  const xrefAt = length;
+  push(`xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`);
+  offsets.forEach((o) => push(`${String(o).padStart(10, '0')} 00000 n \n`));
+  push(`trailer\n<< /Size ${objects.length + 1} /Root 1 0 R /Info 7 0 R >>\nstartxref\n${xrefAt}\n%%EOF\n`);
+  return new Blob(parts, { type: 'application/pdf' });
+}
+
+/* ---------- Recipe links ---------- */
+
+/* Each recipe has its own address on the site: opening it lands on the page
+   with that recipe's pop-up open. Built from wherever the site is served, so
+   it's a kuehmachine.com link once it lives there. */
+function recipeLink(recipe) {
+  return `${location.href.split('#')[0]}#recipe=${encodeURIComponent(recipe.id)}`;
+}
+
+function recipeIdFromHash() {
+  const match = location.hash.match(/^#recipe=(.+)$/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+async function openRecipeFromHash() {
+  const id = recipeIdFromHash();
+  if (!id) return;
+  const detailOpen = !document.getElementById('recipe-detail-overlay').classList.contains('hidden');
+  if (detailOpen && document.getElementById('recipe-detail').dataset.id === id) return;
+  const recipe = recipeCache.get(id) || (await dbGet('recipes', id));
+  if (recipe) {
+    await openRecipeDetail(recipe);
+  } else {
+    showToast('That recipe isn’t on this copy of the site');
+  }
+}
+
+/* Where this part of the kueh machine lives once it's on the site. The PDF's
+   link and the shared message both point here. */
+const SITE_URL = 'https://www.kuehmachine.com/meijun/';
+
+/* The message that travels with the PDF. */
+function shareMessage(recipe) {
+  const dish = [recipe.nameEn, recipe.nameCn].filter(Boolean).join(' ');
+  /* *…* is WhatsApp's bold; other apps show the asterisks as they are. */
+  return `Sharing the *${dish}* recipe from 家常菜 · Taste of Home.\nFor more recipes: kuehmachine.com/meijun`;
+}
+
 /* ---------- Recipe card image (for sharing) ---------- */
 
 /* Many apps (WhatsApp, Messages, AirDrop) keep only the pictures when a share
@@ -1039,7 +1143,7 @@ function wrapText(ctx, text, maxWidth) {
 
 /* Lays the card out once to measure its height, then again to draw it.
    photos: decoded images for the thumbnail strip under the story. */
-function paintRecipeCard(ctx, recipe, draw, photos = []) {
+function paintRecipeCard(ctx, recipe, draw, photos = [], withLink = false) {
   const css = getComputedStyle(document.documentElement);
   const color = (name, fallback) => css.getPropertyValue(name).trim() || fallback;
   const ink = color('--ink', '#3a2a1e');
@@ -1169,7 +1273,17 @@ function paintRecipeCard(ctx, recipe, draw, photos = []) {
   rule(true);
   y += 60;
   text('From 家常菜 · Taste of Home, by Mei Jun · kuehmachine.com', CARD_PAD, `500 32px ${hand}`, inkSoft);
-  return y + CARD_PAD - 24;
+
+  /* PDF only: a line to tap through to the rest of the recipes. */
+  let link = null;
+  if (withLink) {
+    y += 62;
+    const label = 'More recipes at kuehmachine.com/meijun →';
+    text(label, CARD_PAD, `700 38px ${hand}`, accent);
+    ctx.font = `700 38px ${hand}`;
+    link = { left: CARD_PAD - 8, top: y - 40, right: CARD_PAD + ctx.measureText(label).width + 8, bottom: y + 14 };
+  }
+  return { height: y + CARD_PAD - 24, link };
 }
 
 /* The first few photos, decoded small, for the card's thumbnail strip. Files
@@ -1215,34 +1329,56 @@ async function drawRecipeCard(recipe) {
   }
 
   const photos = await loadCardPhotos(recipe);
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = CARD_WIDTH;
-  canvas.height = Math.ceil(paintRecipeCard(ctx, recipe, false, photos));
+  const paper = getComputedStyle(document.documentElement).getPropertyValue('--paper-card').trim() || '#fbf4e6';
 
-  const css = getComputedStyle(document.documentElement);
-  ctx.fillStyle = css.getPropertyValue('--paper-card').trim() || '#fbf4e6';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const render = (withLink) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = CARD_WIDTH;
+    canvas.height = Math.ceil(paintRecipeCard(ctx, recipe, false, photos, withLink).height);
+    ctx.fillStyle = paper;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const { link } = paintRecipeCard(ctx, recipe, true, photos, withLink);
+    return { canvas, link };
+  };
+  const toBlob = (canvas, type, quality) => new Promise((resolve) => canvas.toBlob(resolve, type, quality));
 
-  paintRecipeCard(ctx, recipe, true, photos);
+  /* The image card for downloads and previews; the PDF card adds the link. */
+  const image = render(false);
+  const forPdf = render(true);
   photos.forEach((p) => p.close && p.close());
-  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+
+  const png = await toBlob(image.canvas, 'image/png');
+  const jpeg = await toBlob(forPdf.canvas, 'image/jpeg', 0.9);
+  let pdf = null;
+  if (jpeg) {
+    const bytes = new Uint8Array(await jpeg.arrayBuffer());
+    const title = [recipe.nameEn, recipe.nameCn].filter(Boolean).join(' ');
+    pdf = cardPdf(bytes, forPdf.canvas.width, forPdf.canvas.height, { ...forPdf.link, url: SITE_URL }, title);
+  }
+  return { png, pdf };
 }
 
 /* The card for this recipe as it stands, drawing it if it isn't ready. */
-async function recipeCardBlob(recipe) {
+async function recipeCardFiles(recipe) {
   const key = recipeCardKey(recipe);
   const cached = recipeCardCache.get(recipe.id);
-  if (cached && cached.key === key) return cached.blob;
-  const blob = await drawRecipeCard(recipe);
-  if (blob) recipeCardCache.set(recipe.id, { key, blob });
-  return blob;
+  if (cached && cached.key === key) return cached;
+  const { png, pdf } = await drawRecipeCard(recipe);
+  const entry = { key, png, pdf };
+  if (png) recipeCardCache.set(recipe.id, entry);
+  return entry;
+}
+
+/* The card as an image (preview and download). */
+async function recipeCardBlob(recipe) {
+  return (await recipeCardFiles(recipe)).png;
 }
 
 /* Only what's already drawn, so sharing never has to wait. */
 function readyRecipeCard(recipe) {
   const cached = recipeCardCache.get(recipe.id);
-  return cached && cached.key === recipeCardKey(recipe) ? cached.blob : null;
+  return cached && cached.key === recipeCardKey(recipe) ? cached : null;
 }
 
 async function prepareRecipeCards(recipes) {
@@ -1290,20 +1426,23 @@ function sharePhotos(recipe) {
 /* Opens the system share sheet with the recipe card leading (so apps that
    keep only pictures still get the whole recipe), then the photos, with the
    text alongside. Resolves to 'shared', 'cancelled' or 'failed'. */
+/* Opens the system share sheet with the recipe card as a PDF and a short
+   message carrying a link back to the recipe on the site. Resolves to
+   'shared', 'cancelled' or 'failed'. */
 async function shareNatively(recipe) {
-  const shareData = { title: recipe.nameEn, text: recipeText(recipe) };
+  /* No separate title: share targets add it as its own line or subject,
+     repeating the dish name that's already in the message. */
+  const shareData = { text: shareMessage(recipe) };
 
   if (navigator.canShare) {
     try {
-      const card = readyRecipeCard(recipe) || (await recipeCardBlob(recipe));
-      const files = [];
-      if (card) files.push(new File([card], recipeCardFileName(recipe), { type: 'image/png' }));
-      sharePhotos(recipe).forEach((m) => {
-        files.push(new File([m.blob], shareFileName(m), { type: m.blob.type || 'image/jpeg' }));
-      });
-      if (files.length && navigator.canShare({ files })) shareData.files = files;
+      const card = readyRecipeCard(recipe) || (await recipeCardFiles(recipe));
+      if (card.pdf) {
+        const files = [new File([card.pdf], recipeCardFileName(recipe).replace(/\.png$/, '.pdf'), { type: 'application/pdf' })];
+        if (navigator.canShare({ files })) shareData.files = files;
+      }
     } catch {
-      // share without files
+      // share the message and link without the file
     }
   }
 
@@ -1312,7 +1451,8 @@ async function shareNatively(recipe) {
     return 'shared';
   } catch (err) {
     if (err.name === 'AbortError') return 'cancelled';
-    /* Some share targets turn down attached files; the text still goes. */
+    /* Some share targets turn down attached files; the message and link
+       still go. */
     if (shareData.files) {
       try {
         delete shareData.files;
@@ -1349,7 +1489,16 @@ async function openSharePanel(recipe) {
 
   const canShare = Boolean(navigator.share);
 
-  document.getElementById('share-dish').textContent = [recipe.nameEn, recipe.nameCn].filter(Boolean).join(' · ');
+  /* The hand font has no Chinese, so the Chinese name gets its own smaller
+     serif span rather than a heavy fallback at the full size. */
+  const dish = document.getElementById('share-dish');
+  dish.textContent = recipe.nameEn;
+  if (recipe.nameCn) {
+    const cn = document.createElement('span');
+    cn.className = 'cn';
+    cn.textContent = recipe.nameCn;
+    dish.append(' ', cn);
+  }
   document.getElementById('share-summary').textContent = canShare
     ? 'Share this recipe and the memories that come with it.'
     : 'Download the card to send it on, or save the recipe as a PDF to print.';
@@ -1839,6 +1988,8 @@ async function buildRecipeCard(recipe, index, total) {
 
 async function openRecipeDetail(recipe) {
   recipeCache.set(recipe.id, recipe);
+  /* The address bar names the open recipe, so it can be copied as a link. */
+  if (recipeIdFromHash() !== recipe.id) history.replaceState(null, '', `#recipe=${encodeURIComponent(recipe.id)}`);
   recipeCardBlob(recipe).catch(() => {});
   const overlay = document.getElementById('recipe-detail-overlay');
   const panel = document.getElementById('recipe-detail');
@@ -1856,15 +2007,23 @@ async function openRecipeDetail(recipe) {
   );
   const galleryHtml = visual.length ? `<div class="detail-gallery">${galleryTiles.join('')}</div>` : '';
 
-  const audioItems = await Promise.all(
-    recordings.map(
-      async (m) => `<li>
-        <span class="audio-name">🎙 ${m.name || 'Recording'}</span>
-        ${m.description ? `<span class="audio-note">${m.description}</span>` : ''}
-        ${await mediaTag(m, recipe.nameEn, { playable: true })}
-      </li>`
-    )
-  );
+  /* Her voice notes get the site's own player rather than the browser's grey
+     one: wired up by setupVoiceNotes once the panel is in the page. */
+  const audioItems = recordings.map((m) => {
+    const name = (m.name || 'Recording').replace(/\.[a-z0-9]{2,4}$/i, '');
+    return `<li class="voice-note">
+        <audio src="${mediaSrc(m)}" preload="metadata"></audio>
+        <button type="button" class="voice-play" aria-label="Play ${name}">${ICON.play}</button>
+        <div class="voice-main">
+          <div class="voice-head">
+            <span class="audio-name">${ICON.mic}<span>${name}</span></span>
+            <span class="voice-time" aria-hidden="true">0:00</span>
+          </div>
+          <input type="range" class="voice-seek" min="0" max="1000" value="0" step="1" aria-label="Position in ${name}">
+          ${m.description ? `<span class="audio-note">${m.description}</span>` : ''}
+        </div>
+      </li>`;
+  });
   const audioHtml = recordings.length
     ? `<div class="detail-block">
          <h4>In her own words <span class="cn">原话</span></h4>
@@ -1910,13 +2069,87 @@ async function openRecipeDetail(recipe) {
 
   panel.dataset.id = recipe.id;
   panel.scrollTop = 0;
+  setupVoiceNotes(panel);
   overlay.classList.remove('hidden');
   document.body.classList.add('modal-open');
   panel.tabIndex = -1;
   panel.focus({ preventScroll: true });
 }
 
+/* ---------- Voice note player ---------- */
+
+function formatClock(seconds) {
+  if (!Number.isFinite(seconds)) return '0:00';
+  const s = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+function setupVoiceNotes(panel) {
+  const notes = Array.from(panel.querySelectorAll('.voice-note'));
+  notes.forEach((note) => {
+    const audio = note.querySelector('audio');
+    const play = note.querySelector('.voice-play');
+    const seek = note.querySelector('.voice-seek');
+    const time = note.querySelector('.voice-time');
+    const name = note.querySelector('.audio-name span').textContent;
+    let dragging = false;
+
+    const paint = () => {
+      const duration = audio.duration;
+      const ratio = Number.isFinite(duration) && duration > 0 ? audio.currentTime / duration : 0;
+      if (!dragging) seek.value = Math.round(ratio * 1000);
+      seek.style.setProperty('--progress', `${(seek.value / 10).toFixed(1)}%`);
+      time.textContent = Number.isFinite(duration)
+        ? `${formatClock(audio.currentTime)} / ${formatClock(duration)}`
+        : formatClock(audio.currentTime);
+      seek.setAttribute('aria-valuetext', time.textContent);
+    };
+    const setPlaying = (playing) => {
+      note.classList.toggle('playing', playing);
+      play.innerHTML = playing ? ICON.pause : ICON.play;
+      play.setAttribute('aria-label', `${playing ? 'Pause' : 'Play'} ${name}`);
+    };
+
+    play.addEventListener('click', () => {
+      if (audio.paused) {
+        /* One voice at a time. */
+        notes.forEach((other) => other !== note && other.querySelector('audio').pause());
+        audio.play().catch((err) => {
+          /* NotAllowedError is the browser waiting for a real tap, not a
+             broken file, so only speak up for the rest. */
+          if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+            showToast('This recording can’t play here');
+          }
+        });
+      } else {
+        audio.pause();
+      }
+    });
+    seek.addEventListener('input', () => {
+      dragging = true;
+      if (Number.isFinite(audio.duration)) {
+        audio.currentTime = (seek.value / 1000) * audio.duration;
+      }
+      paint();
+    });
+    seek.addEventListener('change', () => { dragging = false; });
+
+    audio.addEventListener('loadedmetadata', paint);
+    audio.addEventListener('timeupdate', paint);
+    audio.addEventListener('play', () => setPlaying(true));
+    audio.addEventListener('pause', () => setPlaying(false));
+    audio.addEventListener('ended', () => {
+      audio.currentTime = 0;
+      setPlaying(false);
+      paint();
+    });
+    paint();
+  });
+}
+
 function closeRecipeDetail() {
+  document.querySelectorAll('#recipe-detail audio').forEach((a) => a.pause());
+  if (recipeIdFromHash()) history.replaceState(null, '', location.pathname + location.search);
   closeMediaViewer();
   const overlay = document.getElementById('recipe-detail-overlay');
   overlay.classList.add('hidden');
@@ -1941,6 +2174,10 @@ const ICON = {
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10a2.1 2.1 0 10-3-3L5 17v3z"/><path d="M14.5 6.5l3 3"/></svg>',
   download:
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M8 11.5l4 4 4-4"/><path d="M5 19.5h14"/></svg>',
+  play:
+    '<svg viewBox="0 0 24 24" aria-hidden="true" class="solid-icon"><path d="M8 5.5v13a1 1 0 001.5.86l10.5-6.5a1 1 0 000-1.72L9.5 4.64A1 1 0 008 5.5z"/></svg>',
+  pause:
+    '<svg viewBox="0 0 24 24" aria-hidden="true" class="solid-icon"><rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/></svg>',
   trash:
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M10 4h4a1 1 0 011 1v2H9V5a1 1 0 011-1z"/><path d="M6 7l1 12.5a1.5 1.5 0 001.5 1.4h7a1.5 1.5 0 001.5-1.4L18 7"/><path d="M10.5 11v6M13.5 11v6"/></svg>',
 };
@@ -2259,6 +2496,8 @@ async function init() {
   setupBackup();
   setupSharePanel();
   await renderRecipes();
+  openRecipeFromHash();
+  window.addEventListener('hashchange', openRecipeFromHash);
   fetchSeedMediaInBackground().catch((err) => console.warn('Background media fetch stopped:', err));
 }
 

@@ -247,6 +247,7 @@ a {
 .edit-term:focus-visible,
 .delete-term:focus-visible,
 .close-btn:focus-visible,
+.voice-play:focus-visible,
 .viewer-nav:focus-visible {
   outline: 2px solid var(--accent-soft);
   outline-offset: 2px;
@@ -1124,24 +1125,163 @@ body.modal-open {
   gap: 0.9rem;
 }
 
+/* Each voice note on its own dashed slip: a round play button, then the
+   name and time over a thin progress line. */
 .audio-list li {
   background: var(--paper);
   border: 1px dashed var(--line);
   border-radius: 2px;
-  padding: 0.75rem 0.9rem;
+  padding: 0.85rem 1rem;
+}
+
+.voice-note {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.voice-note audio {
+  display: none;
+}
+
+.voice-play {
+  flex: 0 0 auto;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--paper-card);
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(58, 42, 30, 0.18);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.voice-play:hover {
+  background: #9c3a22;
+}
+
+.voice-play:active {
+  transform: scale(0.95);
+}
+
+.voice-play svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  pointer-events: none;
+}
+
+.solid-icon {
+  fill: currentColor;
+  stroke: none;
+}
+
+.voice-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.voice-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .audio-name {
-  display: block;
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  font-size: 0.9rem;
+  color: var(--ink);
   word-break: break-word;
 }
 
-.audio-list audio {
-  width: 100%;
+.audio-name svg {
+  flex: 0 0 auto;
+  width: 0.95rem;
+  height: 0.95rem;
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.voice-time {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.audio-note {
   display: block;
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+/* Thin progress line, terracotta up to where she's got to. */
+.voice-seek {
+  --progress: 0%;
+  display: block;
+  width: 100%;
+  height: 1.1rem;
+  margin: 0.3rem 0 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.voice-seek::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--accent) var(--progress), rgba(58, 42, 30, 0.15) var(--progress));
+}
+
+.voice-seek::-moz-range-track {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(58, 42, 30, 0.15);
+}
+
+.voice-seek::-moz-range-progress {
+  height: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.voice-seek::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 11px;
+  height: 11px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--paper);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.voice-seek::-moz-range-thumb {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--paper);
+}
+
+.voice-seek:focus {
+  outline: none;
+}
+
+.voice-seek:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(183, 71, 42, 0.3);
 }
 
 /* Room to breathe before the buttons, so they read as a footer to the
@@ -1236,7 +1376,7 @@ body.modal-open {
   margin: auto;
   display: grid;
   grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr);
-  gap: 1.6rem;
+  gap: 2rem;
   align-items: start;
   padding: 2.1rem 1.75rem 1.6rem;
 }
@@ -1312,6 +1452,12 @@ body.modal-open {
   font-family: var(--font-hand);
   font-size: 1.1rem;
   color: var(--ink-soft);
+}
+
+/* Same weight as before, just a size down so it sits with the English. */
+.share-card .share-dish .cn {
+  font-size: 0.8em;
+  white-space: nowrap;
 }
 
 /* Set a little lower than the top of the card preview beside it. */
