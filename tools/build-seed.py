@@ -30,7 +30,7 @@ INDEX_FILE = os.path.join(ROOT, 'index.html')
 IMAGE_EXT = {'image/png': 'png', 'image/jpeg': 'jpg', 'image/heic': 'heic', 'image/webp': 'webp'}
 VIDEO_EXT = {'video/quicktime': 'mov', 'video/mp4': 'mp4', 'video/webm': 'webm'}
 AUDIO_EXT = {
-    'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/mpeg': 'mp3',
+    'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/mp4a-latm': 'm4a', 'audio/mpeg': 'mp3',
     'audio/wav': 'wav', 'audio/x-wav': 'wav', 'audio/webm': 'webm', 'audio/ogg': 'ogg',
 }
 
@@ -57,8 +57,13 @@ def make_poster(video_path, out_name):
 
 def to_h264(video_path):
     """iPhone video is usually HEVC, which Firefox and many Chrome installs
-    can't play. Re-encode to H.264 MP4 with macOS's own converter."""
+    can't play. Re-encode to H.264 MP4 with macOS's own converter; an MP4
+    that's already H.264 is left as it is."""
     out_path = os.path.splitext(video_path)[0] + '.mp4'
+    if video_path.endswith('.mp4'):
+        with open(video_path, 'rb') as f:
+            if b'avc1' in f.read():
+                return video_path
     tmp_path = out_path + '.tmp.mp4'
     try:
         subprocess.run(['avconvert', '--source', video_path, '--preset', 'Preset1280x720',

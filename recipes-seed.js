@@ -111,30 +111,37 @@ const SEED_RECIPES = [
       {
         "id": "orh-kueh-yam-cake-6",
         "type": "image",
-        "name": "Adding mixtures into big wok",
+        "name": "Adding mixtures into big wok to cook and stir",
         "description": "",
         "src": "./media/orh-kueh-yam-cake-6.jpg"
       },
       {
         "id": "orh-kueh-yam-cake-7",
         "type": "image",
-        "name": "Cooking and stirring of mixtures",
+        "name": "Pour cooked mixtures into metal tray",
         "description": "",
         "src": "./media/orh-kueh-yam-cake-7.jpg"
       },
       {
         "id": "orh-kueh-yam-cake-8",
         "type": "image",
-        "name": "Pour cooked mixtures into metal tray",
+        "name": "Smooth the cooked mixture",
         "description": "",
         "src": "./media/orh-kueh-yam-cake-8.jpg"
       },
       {
         "id": "orh-kueh-yam-cake-9",
         "type": "image",
-        "name": "Smooth the cooked mixture",
+        "name": "Orh Kueh handwritten recipe",
         "description": "",
         "src": "./media/orh-kueh-yam-cake-9.jpg"
+      },
+      {
+        "id": "orh-kueh-yam-cake-10",
+        "type": "audio",
+        "name": "芋头糕.m4a",
+        "description": "",
+        "src": "./media/orh-kueh-yam-cake-10.m4a"
       }
     ]
   },
@@ -321,6 +328,13 @@ const SEED_RECIPES = [
         "name": "Handwritten recipe for Yi Bua",
         "description": "",
         "src": "./media/hainanese-yi-bua-kueh-co-3.jpg"
+      },
+      {
+        "id": "hainanese-yi-bua-kueh-co-4",
+        "type": "audio",
+        "name": "Yi bua recipe.m4a",
+        "description": "",
+        "src": "./media/hainanese-yi-bua-kueh-co-4.m4a"
       }
     ]
   },
@@ -328,7 +342,7 @@ const SEED_RECIPES = [
     "id": "bce4bd31-c5af-41a6-aa0e-8002fe869502",
     "nameEn": "Tang yuan / Glutinous rice ball",
     "nameCn": "汤圆",
-    "story": "During 冬至，winter solstice or 元宵节，during chinese new year period, my mum will always make tang yuan for the family to signify 一家团圆， family reunion.",
+    "story": "During 冬至, winter solstice or 元宵节, during the Chinese New Year period, my mum will always make tang yuan for the family to signify 一家团圆, family reunion.",
     "ingredients": [
       {
         "her": "糯米粉",
@@ -387,6 +401,13 @@ const SEED_RECIPES = [
         "name": "Cooking rolled tang yuan",
         "description": "",
         "src": "./media/tang-yuan-glutinous-rice-4.jpg"
+      },
+      {
+        "id": "tang-yuan-glutinous-rice-5",
+        "type": "audio",
+        "name": "汤圆 recipe.m4a",
+        "description": "",
+        "src": "./media/tang-yuan-glutinous-rice-5.m4a"
       }
     ]
   }
@@ -394,19 +415,23 @@ const SEED_RECIPES = [
 
 const SEED_GLOSSARY = [
   {
-    "term": "一把 (a handful)",
-    "meaning": "~30g"
+    "term": "两块钱姜",
+    "meaning": "$2 worth of ginger, a thumb-sized knob, ~15g"
   },
   {
-    "term": "少许 (a little)",
-    "meaning": "~1/4 tsp"
+    "term": "一把",
+    "meaning": "a handful  ~30g"
   },
   {
-    "term": "一粒椰糖",
-    "meaning": "1 block of Palm sugar (100g)"
+    "term": "少许",
+    "meaning": "a little  ~1/4 tsp"
   },
   {
-    "term": "$2 worth of ginger",
-    "meaning": "a thumb-sized knob, ~15g"
+    "term": "一大汤匙",
+    "meaning": "about 2 tbsp"
+  },
+  {
+    "term": "一点点",
+    "meaning": "1/2 tbsp"
   }
 ];
