@@ -77,6 +77,17 @@ def to_h264(video_path):
     return out_path
 
 
+def fits_already(path, limit=1600):
+    """True if the image is no larger than `limit` on its longest side."""
+    try:
+        out = subprocess.run(['sips', '-g', 'pixelWidth', '-g', 'pixelHeight', path],
+                             capture_output=True, text=True, check=True).stdout
+        sizes = [int(v) for v in re.findall(r'pixel(?:Width|Height): (\d+)', out)]
+        return len(sizes) == 2 and max(sizes) <= limit
+    except (subprocess.CalledProcessError, FileNotFoundError, ValueError):
+        return False
+
+
 def read_media(item):
     """The file's bytes and type: from the backup, or, for built-in media the
     browser hadn't copied in yet, from the project's current media folder."""
@@ -175,6 +186,11 @@ def main():
                     final_path = to_h264(final_path)
                     final_name = os.path.basename(final_path)
                     poster = make_poster(final_path, f'{name}-{index}-poster.jpg')
+            elif mime == 'image/jpeg' and fits_already(raw_path):
+                # Already a small enough JPEG (e.g. one this script made last
+                # time): keep the exact bytes rather than compressing again.
+                final_name = f'{name}-{index}.jpg'
+                os.rename(raw_path, os.path.join(MEDIA_DIR, final_name))
             else:
                 final_name = f'{name}-{index}.jpg'
                 subprocess.run(

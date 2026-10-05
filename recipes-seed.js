@@ -415,8 +415,12 @@ const SEED_RECIPES = [
 
 const SEED_GLOSSARY = [
   {
-    "term": "两块钱姜",
-    "meaning": "$2 worth of ginger, a thumb-sized knob, ~15g"
+    "term": "两块钱小辣椒",
+    "meaning": "$2 worth of chili padi (~150g, a small bag)"
+  },
+  {
+    "term": "两块姜",
+    "meaning": "2 knobs of ginger, each about thumb-sized (~30g total)"
   },
   {
     "term": "一把",

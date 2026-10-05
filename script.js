@@ -312,15 +312,50 @@ const DEFAULT_GLOSSARY = [
   { term: '$2 worth of ginger', meaning: 'a thumb-sized knob, ~15g' },
 ];
 
-async function seedGlossaryIfEmpty() {
-  const existing = await dbGetAll('glossary');
-  if (existing.length > 0) return;
-  const entries = typeof SEED_GLOSSARY !== 'undefined' && SEED_GLOSSARY.length
+/* Which built-in glossary this browser last took in, so it can tell when
+   recipes-seed.js has a newer one. */
+const SEEDED_GLOSSARY_KEY = 'tasteOfHome.seededGlossary';
+
+/* Every phrase that has ever shipped with the site. A browser's copy of one
+   of these came from the project, not from its visitor, so it can be swapped
+   for the current list. */
+const PAST_SEED_GLOSSARY = [
+  ['$2 worth of ginger', 'a thumb-sized knob, ~15g'],
+  ['一大汤匙', 'about 2 tbsp'],
+  ['一把', 'a handful  ~30g'],
+  ['一把 (a handful)', '~30g'],
+  ['一点点', '1/2 tbsp'],
+  ['一粒椰糖', '1 block of Palm sugar (100g)'],
+  ['两块钱姜', '$2 worth of ginger, a thumb-sized knob, ~15g'],
+  ['少许', 'a little  ~1/4 tsp'],
+  ['少许 (a little)', '~1/4 tsp'],
+];
+
+/* Brings this browser's glossary up to the built-in one whenever that
+   changes: built-in phrases are replaced and put in the site's order, and
+   phrases the visitor added or edited themselves are kept after them. */
+async function syncSeedGlossary() {
+  const seed = typeof SEED_GLOSSARY !== 'undefined' && SEED_GLOSSARY.length
     ? SEED_GLOSSARY
     : DEFAULT_GLOSSARY;
-  for (const [order, entry] of entries.entries()) {
-    await dbPut('glossary', { id: makeId(), ...entry, order });
+  const fingerprint = seedFingerprint({ glossary: seed });
+  const existing = sortGlossary(await dbGetAll('glossary'));
+  if (existing.length && readStorage(SEEDED_GLOSSARY_KEY) === fingerprint) return;
+
+  const builtIn = new Set(
+    [...PAST_SEED_GLOSSARY, ...seed.map((e) => [e.term, e.meaning])].map(([t, m]) => `${t}\u0000${m}`)
+  );
+  const fromProject = (e) => e.fromSeed || builtIn.has(`${e.term}\u0000${e.meaning}`);
+  const own = existing.filter((e) => !fromProject(e));
+
+  for (const e of existing) if (fromProject(e)) await dbDelete('glossary', e.id);
+  for (const [order, entry] of seed.entries()) {
+    await dbPut('glossary', { id: makeId(), term: entry.term, meaning: entry.meaning, order, fromSeed: true });
   }
+  for (const [i, entry] of own.entries()) {
+    await dbPut('glossary', { ...entry, order: seed.length + i });
+  }
+  writeStorage(SEEDED_GLOSSARY_KEY, fingerprint);
 }
 
 /* Phrases in the order they've been dragged into. Ones saved before ordering
@@ -444,7 +479,8 @@ async function saveEditedTerm(li) {
   }
 
   const entry = await dbGet('glossary', li.dataset.id);
-  await dbPut('glossary', { ...entry, term, meaning });
+  /* Edited here, so it's this visitor's now: built-in updates leave it be. */
+  await dbPut('glossary', { ...entry, term, meaning, fromSeed: false });
   await renderGlossary(currentGlossaryFilter());
   showToast('Glossary updated');
 }
@@ -472,7 +508,7 @@ function setupGlossary() {
     const existing = await dbGetAll('glossary');
     const match = existing.find((entry) => entry.term.trim().toLowerCase() === term.toLowerCase());
     if (match) {
-      await dbPut('glossary', { ...match, meaning });
+      await dbPut('glossary', { ...match, meaning, fromSeed: false });
       showToast(`Updated “${match.term}”`);
     } else {
       /* New phrases go to the top, where they can be seen landing. */
@@ -2392,7 +2428,7 @@ function setupVoiceInput() {
 async function init() {
   /* A hiccup here mustn't stop the page: whatever is stored still renders. */
   try {
-    await seedGlossaryIfEmpty();
+    await syncSeedGlossary();
     await syncSeedRecipes();
   } catch (err) {
     console.warn('Could not check the built-in recipes:', err);
