@@ -6,6 +6,9 @@
   --accent: #b7472a;
   --accent-soft: #c98a4b;
   --tape: #e8d9a8;
+  /* Fields on the glossary sheet, matching the recipe form's inputs. */
+  --field: var(--paper);
+  --field-line: var(--line);
   --line: rgba(58, 42, 30, 0.14);
 
   --font-body: 'Noto Serif SC', serif;
@@ -183,6 +186,16 @@ a {
   color: var(--ink-soft);
   font-size: 0.98rem;
   margin-top: 0.5rem;
+}
+
+.section-note em {
+  color: var(--ink);
+}
+
+/* Noto Serif SC sets curly quotes full-width, leaving a gap either side of
+   the word; Georgia's sit snug against Latin text. */
+.latin-quote {
+  font-family: Georgia, 'Times New Roman', serif;
 }
 
 /* ---------- Buttons ---------- */
@@ -1209,6 +1222,223 @@ body.modal-open {
   border-top: 1px dashed var(--line);
 }
 
+/* ---------- Share panel ---------- */
+
+/* Same taped paper as the confirm dialog, wide enough to show the recipe
+   card beside the ways to send it. Scrolls as a whole on short screens. */
+.share-overlay {
+  overflow-y: auto;
+}
+
+/* The preview takes a little over half; the share column the rest. */
+.share-card {
+  max-width: 760px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr);
+  gap: 1.6rem;
+  align-items: start;
+  padding: 2.1rem 1.75rem 1.6rem;
+}
+
+/* The card itself, pasted in at a slight angle. The frame tilts and casts
+   the shadow; the card scrolls inside it with the browser's scrollbar
+   hidden, fading out at the bottom edge to say there's more. */
+.share-preview-frame {
+  position: relative;
+  border-radius: 2px;
+  box-shadow: 0 4px 12px rgba(58, 42, 30, 0.16);
+  transform: rotate(-1.2deg);
+  overflow: hidden;
+}
+
+.share-preview {
+  max-height: min(540px, 72vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--paper-card);
+}
+
+.share-preview::after {
+  content: '';
+  position: sticky;
+  bottom: 0;
+  display: block;
+  height: 2.5rem;
+  margin-top: -2.5rem;
+  background: linear-gradient(rgba(251, 244, 230, 0), var(--paper-card));
+  pointer-events: none;
+}
+
+/* Quiet scrollbars: the browser's own hidden, replaced by a short thin thumb
+   that script shows while scrolling (see attachQuietScrollbar). Used by the
+   share preview and the story field. */
+.quiet-scroll {
+  scrollbar-width: none;
+}
+
+.quiet-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.quiet-thumb {
+  position: absolute;
+  top: 0;
+  right: 4px;
+  width: 3px;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(58, 42, 30, 0.3);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.quiet-thumb.visible {
+  opacity: 1;
+  transition-duration: 0.1s;
+}
+
+.share-preview img {
+  display: block;
+  width: 100%;
+}
+
+.share-preview-wait {
+  margin: 0;
+  padding: 3rem 1rem;
+  text-align: center;
+  font-family: var(--font-hand);
+  font-size: 1.1rem;
+  color: var(--ink-soft);
+}
+
+/* Set a little lower than the top of the card preview beside it. */
+.share-body {
+  padding-top: 1.5rem;
+}
+
+.share-card h3 {
+  /* Clear of the close button. */
+  margin-right: 2rem;
+  font-size: 1.1rem;
+}
+
+/* The dish, in the hand and red of the site's labels, a size up from them.
+   Scoped to the card to outrank .confirm-card p. */
+.share-card .share-dish {
+  margin: 0.1rem 0 0.6rem;
+  font-family: var(--font-hand);
+  font-size: 1.3rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--accent);
+}
+
+.share-card .share-summary {
+  font-size: 0.88rem;
+}
+
+.share-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
+}
+
+/* One button shape for all four: the pill of "+ Add" and friends, at one
+   height and size. Share is simply the filled one. */
+.share-actions .primary-btn,
+.share-actions .mini-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.45rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 400;
+  box-shadow: none;
+}
+
+.share-actions .primary-btn:hover {
+  background: #9c3a22;
+  border-color: #9c3a22;
+}
+
+.share-actions svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+/* Scoped to the card to outrank .confirm-card p, which zeroes margins. */
+.share-card .share-status {
+  margin: 1.25rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--line);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.share-card .share-status:empty {
+  display: none;
+}
+
+.share-status em {
+  color: var(--ink);
+}
+
+/* Stacked on narrow screens: a short window onto the card, then the actions. */
+@media (max-width: 560px) {
+  .share-card {
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+  }
+
+  /* Stacked, the share column has the full width back, so the earlier sizes. */
+  .share-card h3 {
+    font-size: 1.2rem;
+  }
+
+  .share-card .share-dish {
+    font-size: 1.4rem;
+  }
+
+  .share-card .share-summary {
+    font-size: 0.92rem;
+  }
+
+  .share-actions .primary-btn,
+  .share-actions .mini-btn {
+    min-height: 2.6rem;
+    font-size: 0.92rem;
+  }
+
+  .share-body {
+    padding-top: 0;
+  }
+
+  .share-preview-frame {
+    width: min(300px, 82%);
+    margin: 0 auto;
+  }
+
+  .share-preview {
+    max-height: 40vh;
+  }
+}
+
 .quiet-btn {
   font-family: var(--font-body);
   font-size: 0.9rem;
@@ -1479,14 +1709,66 @@ body.modal-open {
 
 /* ---------- Glossary ---------- */
 
-/* One pasted-in sheet with ruled lines, rather than a stack of loose cards. */
-.glossary-list {
-  list-style: none;
-  padding: 0;
-  margin: 0.75rem 0 0;
+/* Adding, and what's been decoded, on one pasted-in sheet, taped down and
+   set a touch askew like the recipe cards. */
+.glossary-card {
+  --card-pad: 1.5rem;
+  /* Edit and delete: the tap area of each, the space between them (none,
+     like the icon row on a recipe card), and how far the 1.05rem icon sits
+     inside its tap area. */
+  --icon-btn: 1.85rem;
+  --icon-gap: 0rem;
+  --icon-inset: calc((var(--icon-btn) - 1.05rem) / 2);
+  position: relative;
+  margin-top: 1.75rem;
   background: var(--paper-card);
   border-radius: 2px;
-  box-shadow: 0 4px 12px rgba(58, 42, 30, 0.1);
+  box-shadow: 0 1px 2px rgba(58, 42, 30, 0.1), 0 8px 18px rgba(58, 42, 30, 0.09);
+  transform: rotate(-0.25deg);
+}
+
+.glossary-card::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 70px;
+  height: 22px;
+  background: var(--tape);
+  opacity: 0.85;
+}
+
+/* Each half of the sheet gets a handwritten label, in the same hand and red
+   as "Read the full recipe". */
+.glossary-subhead {
+  margin: 0;
+  padding: 1.4rem var(--card-pad) 0;
+  font-family: var(--font-hand);
+  font-size: 1.3rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--accent);
+}
+
+/* A solid rule between the halves, heavier than the dashed lines between
+   rows, so it reads as two sections rather than one more row. */
+.glossary-subhead-split {
+  border-top: 1px solid var(--line);
+}
+
+/* Search sits at the head of the list, ruled off from it. */
+.glossary-search-row {
+  padding: 0.6rem var(--card-pad) 0.9rem;
+  border-bottom: 1px dashed var(--line);
+}
+
+/* Ruled lines running edge to edge of the sheet. */
+.glossary-list {
+  list-style: none;
+  /* A little paper left under the last phrase. */
+  padding: 0 0 0.6rem;
+  margin: 0;
   overflow: hidden;
 }
 
@@ -1495,12 +1777,55 @@ body.modal-open {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.6rem;
-  padding: 0.9rem 1.1rem;
+  gap: 0.85rem;
+  padding: 0.9rem var(--card-pad);
   /* Room for the two buttons pinned in the corner. */
-  padding-right: 4.4rem;
+  padding-right: calc(var(--card-pad) + 2 * var(--icon-btn) + var(--icon-gap));
   border-bottom: 1px dashed var(--line);
-  font-size: 0.95rem;
+  font-size: 1rem;
+}
+
+/* The ⠿ handle sits in its own column, its icon on the search field's left
+   edge as the trash icon is on the right; the phrase (and any line it wraps
+   onto) starts after it. */
+.glossary-list.sortable li[data-id]:not(.editing) {
+  padding-left: calc(var(--card-pad) - var(--icon-inset) + var(--icon-btn) + 0.15rem);
+}
+
+.glossary-list .glossary-grip {
+  position: absolute;
+  left: calc(var(--card-pad) - var(--icon-inset));
+  /* Centred on the first line of text, like the edit and delete icons. */
+  top: calc(1.7rem - var(--icon-btn) / 2);
+  width: var(--icon-btn);
+  height: var(--icon-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 3px;
+}
+
+.glossary-list .glossary-grip:hover {
+  background: rgba(183, 71, 42, 0.08);
+}
+
+.glossary-list .glossary-grip:active {
+  cursor: grabbing;
+}
+
+.glossary-list .glossary-grip svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  pointer-events: none;
+}
+
+/* Lifted off the sheet while dragged, like a recipe card. */
+.glossary-list li.dragging {
+  background: var(--paper-card);
+  box-shadow: 0 8px 20px rgba(58, 42, 30, 0.18);
+  position: relative;
+  z-index: 2;
 }
 
 .glossary-list li:last-child {
@@ -1513,21 +1838,21 @@ body.modal-open {
   font-size: 0.85rem;
 }
 
+/* Regular weight: the colour alone marks it as the translation. */
 .meaning {
   color: var(--accent);
-  font-weight: 600;
   margin-right: auto;
 }
 
 /* Pinned to the row's top right, so a phrase that wraps onto two lines never
-   pushes them onto a line of their own. */
-/* Same sizing and zero gap as the icon row on a recipe card. */
+   pushes them onto a line of their own. Centred on the first line of text
+   (0.9rem padding + half of a 1.6rem line). */
 .glossary-list li:not(.editing) .edit-term,
 .glossary-list li:not(.editing) .delete-term {
   position: absolute;
-  top: 0.6rem;
-  width: 1.85rem;
-  height: 1.85rem;
+  top: calc(1.7rem - var(--icon-btn) / 2);
+  width: var(--icon-btn);
+  height: var(--icon-btn);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1535,13 +1860,14 @@ body.modal-open {
   border-radius: 3px;
 }
 
-.glossary-list li:not(.editing) .edit-term {
-  /* A hair tighter than the recipe cards: the icons read as one pair. */
-  right: 2.15rem;
+/* The trash icon's right edge lines up with the "+ Add" button's, at the
+   card's padding; the tap area runs a little past it, as hover shows. */
+.glossary-list li:not(.editing) .delete-term {
+  right: calc(var(--card-pad) - var(--icon-inset));
 }
 
-.glossary-list li:not(.editing) .delete-term {
-  right: 0.5rem;
+.glossary-list li:not(.editing) .edit-term {
+  right: calc(var(--card-pad) - var(--icon-inset) + var(--icon-btn) + var(--icon-gap));
 }
 
 .glossary-list .edit-term:hover,
@@ -1579,7 +1905,7 @@ body.modal-open {
 
 .glossary-list li.editing {
   gap: 0.5rem;
-  padding-right: 1.1rem;
+  padding-right: var(--card-pad);
   background: var(--paper);
   outline: 1px solid var(--accent-soft);
   outline-offset: -1px;
@@ -1591,7 +1917,7 @@ body.modal-open {
   padding: 0.4rem 0.6rem;
   border: 1px solid var(--line);
   border-radius: 3px;
-  background: var(--paper);
+  background: var(--field);
   color: var(--ink);
   flex: 1;
   min-width: 140px;
@@ -1604,7 +1930,6 @@ body.modal-open {
 
 .edit-meaning-input {
   color: var(--accent);
-  font-weight: 600;
 }
 
 .glossary-list .cancel-edit {
@@ -1623,7 +1948,6 @@ body.modal-open {
 /* Search field with the magnifier tucked inside it. */
 .glossary-search-field {
   position: relative;
-  margin-top: 1.5rem;
 }
 
 .search-icon {
@@ -1645,11 +1969,18 @@ body.modal-open {
   width: 100%;
   font-family: var(--font-body);
   font-size: 0.9rem;
-  padding: 0.6rem 0.8rem 0.6rem 2.3rem;
-  border: 1px solid var(--line);
+  /* Room on the right for the "2 of 4" count. */
+  padding: 0.6rem 4.5rem 0.6rem 2.3rem;
+  border: 1px solid var(--field-line);
   border-radius: 3px;
-  background: var(--paper-card);
+  /* Unfilled, so it reads as a tool on the sheet rather than another entry. */
+  background: transparent;
   color: var(--ink);
+}
+
+/* Only make room for the count once there's a search to count. */
+.glossary-search:placeholder-shown {
+  padding-right: 0.8rem;
 }
 
 .glossary-search:focus {
@@ -1657,21 +1988,23 @@ body.modal-open {
   border-color: var(--accent-soft);
 }
 
-/* Adding a phrase is always in reach: one line, under the search. */
+/* Adding a phrase comes first on the sheet: her words → mine, read the same
+   way as the rows below. */
 .glossary-add {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.75rem;
   flex-wrap: wrap;
-  margin-top: 1.1rem;
+  padding: 0.6rem var(--card-pad) 1.4rem;
 }
 
 .glossary-add input {
   font-family: var(--font-body);
   font-size: 0.9rem;
   padding: 0.6rem 0.8rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--field-line);
   border-radius: 3px;
-  background: var(--paper-card);
+  background: var(--field);
   color: var(--ink);
   flex: 1;
   min-width: 180px;
@@ -1687,21 +2020,22 @@ body.modal-open {
   padding: 0.4rem 1rem;
 }
 
+/* Matches while searching, tucked into the right end of the search field. */
 .glossary-count {
-  margin: 1.1rem 0 0;
-  font-size: 0.85rem;
+  position: absolute;
+  right: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
   color: var(--ink-soft);
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .glossary-empty {
   justify-content: center;
   color: var(--ink-soft);
   font-style: italic;
-}
-
-.glossary-count {
-  font-size: 0.85rem;
-  color: var(--ink-soft);
 }
 
 /* ---------- Footer ---------- */
@@ -1965,8 +2299,16 @@ body.modal-open {
     font-size: 1.5rem;
   }
 
-  .glossary-add {
-    margin-top: 1.4rem;
+  .glossary-card {
+    --card-pad: 1.1rem;
+  }
+
+  .glossary-card {
+    transform: none;
+  }
+
+  .glossary-add .arrow {
+    display: none;
   }
 
   .glossary-add input {

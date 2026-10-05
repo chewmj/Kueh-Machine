@@ -148,9 +148,6 @@ function askConfirm({ title, body, confirmLabel = 'Delete', cancelLabel = 'Keep 
 /* Which built-in recipes this browser has been given, so one deleted here
    doesn't come back on the next visit. */
 const SEEDED_IDS_KEY = 'tasteOfHome.seededRecipeIds';
-/* Left by the first version, which copied the built-in recipes in once and
-   never looked at recipes-seed.js again. */
-const LEGACY_SEED_FLAG = 'tasteOfHome.seededRecipes.v1';
 
 /* localStorage throws instead of returning nothing when site data is blocked. */
 function readStorage(key) {
@@ -209,15 +206,12 @@ async function syncSeedRecipes() {
   } catch {
     delivered = null;
   }
-  /* Copies made by the first version carry no fingerprint, so there's no
-     telling them from edited ones. They came from the same backup the seed
-     was built from, so they're refreshed. */
-  const upgrading = !Array.isArray(delivered) && Boolean(readStorage(LEGACY_SEED_FLAG));
   const deliveredIds = new Set(Array.isArray(delivered) ? delivered : existing.map((r) => r.id));
 
   const lineup = [...existing].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const changed = new Set();
   const staleMediaIds = [];
+  let adoptSeedOrder = false;
 
   for (const seed of SEED_RECIPES) {
     const current = byId.get(seed.id);
@@ -231,8 +225,15 @@ async function syncSeedRecipes() {
       continue;
     }
 
-    const outdated = current.seedHash ? current.seedHash !== seedFingerprint(seed) : upgrading;
+    /* A copy carrying a fingerprint is refreshed when the seed has moved on.
+       One without came from before fingerprints existed (the first
+       version's seeding, or a restored backup) and is only kept if it was
+       saved through the form since, which stamps editedAt; otherwise it's
+       older than the seed, which was built from those same recipes. */
+    const presync = !current.seedHash && !current.editedAt;
+    const outdated = current.seedHash ? current.seedHash !== seedFingerprint(seed) : presync;
     if (!outdated) continue;
+    if (presync) adoptSeedOrder = true;
 
     const refreshed = seedCopy(seed, current.order);
     lineup[lineup.indexOf(current)] = refreshed;
@@ -240,9 +241,9 @@ async function syncSeedRecipes() {
     (current.media || []).forEach((m) => staleMediaIds.push(m.id));
   }
 
-  /* The first version's order came from its own seed, not from anyone
-     dragging cards here, so take the current one. */
-  if (upgrading) {
+  /* Pre-fingerprint copies brought their order from an old seed or backup,
+     not from anyone dragging cards here, so take the current one. */
+  if (adoptSeedOrder) {
     const seedOrder = new Map(SEED_RECIPES.map((r, i) => [r.id, i]));
     const rank = (r) => (seedOrder.has(r.id) ? seedOrder.get(r.id) : SEED_RECIPES.length);
     lineup.sort((a, b) => rank(a) - rank(b));
@@ -297,6 +298,7 @@ async function fetchSeedMediaInBackground() {
       if (!target) continue;
       target.blob = blob;
       await dbPut('recipes', latest);
+      if (recipeCache.has(id)) recipeCache.set(id, latest);
     }
   }
 }
@@ -316,34 +318,59 @@ async function seedGlossaryIfEmpty() {
   const entries = typeof SEED_GLOSSARY !== 'undefined' && SEED_GLOSSARY.length
     ? SEED_GLOSSARY
     : DEFAULT_GLOSSARY;
-  for (const entry of entries) {
-    await dbPut('glossary', { id: makeId(), ...entry });
+  for (const [order, entry] of entries.entries()) {
+    await dbPut('glossary', { id: makeId(), ...entry, order });
+  }
+}
+
+/* Phrases in the order they've been dragged into. Ones saved before ordering
+   existed keep the order they were showing in, after the ordered ones. */
+function sortGlossary(entries) {
+  return entries
+    .map((entry, i) => ({ entry, rank: typeof entry.order === 'number' ? entry.order : 1e6 + i }))
+    .sort((a, b) => a.rank - b.rank)
+    .map(({ entry }) => entry);
+}
+
+async function persistGlossaryOrder() {
+  const ids = Array.from(document.querySelectorAll('#glossary-list li[data-id]')).map((li) => li.dataset.id);
+  for (let i = 0; i < ids.length; i += 1) {
+    const entry = await dbGet('glossary', ids[i]);
+    if (entry && entry.order !== i) await dbPut('glossary', { ...entry, order: i });
   }
 }
 
 async function renderGlossary(filterText = '') {
   const list = document.getElementById('glossary-list');
-  const all = await dbGetAll('glossary');
+  const all = sortGlossary(await dbGetAll('glossary'));
   const filtered = all.filter((entry) =>
     entry.term.toLowerCase().includes(filterText.toLowerCase()) ||
     entry.meaning.toLowerCase().includes(filterText.toLowerCase())
   );
 
-  const count = document.getElementById('glossary-count');
-  if (count) {
-    if (!all.length) {
-      count.textContent = 'Nothing pinned down yet';
-    } else if (filterText) {
-      count.textContent = `${filtered.length} of ${all.length} phrases`;
-    } else {
-      count.textContent = `${all.length} phrase${all.length === 1 ? '' : 's'} pinned down`;
-    }
-  }
+  /* The total lives in the search placeholder; the match count only shows
+     inside the field while searching. */
+  const search = document.getElementById('glossary-search');
+  search.placeholder = all.length
+    ? `Search ${all.length} decoded phrase${all.length === 1 ? '' : 's'}…`
+    : 'Nothing decoded yet, add one above';
+  document.getElementById('glossary-count').textContent = filterText
+    ? `${filtered.length} of ${all.length}`
+    : '';
+
+  /* Reordering a search's matches would be guesswork about where they sit in
+     the full list, so the handles only show when nothing is filtered. */
+  const sortable = !filterText;
+  list.classList.toggle('sortable', sortable);
+  const handle = sortable
+    ? `<button type="button" class="drag-handle glossary-grip" aria-label="Drag to reorder, or use the arrow keys">${ICON.grip}</button>`
+    : '';
 
   list.innerHTML = filtered
     .map(
       (entry) => `
         <li data-id="${entry.id}">
+          ${handle}
           <span class="term">${entry.term}</span>
           <span class="arrow">→</span>
           <span class="meaning">${entry.meaning}</span>
@@ -448,16 +475,21 @@ function setupGlossary() {
       await dbPut('glossary', { ...match, meaning });
       showToast(`Updated “${match.term}”`);
     } else {
-      await dbPut('glossary', { id: makeId(), term, meaning });
+      /* New phrases go to the top, where they can be seen landing. */
+      const orders = existing.map((entry) => entry.order).filter((n) => typeof n === 'number');
+      const order = (orders.length ? Math.min(...orders) : 0) - 1;
+      await dbPut('glossary', { id: makeId(), term, meaning, order });
+      showToast(`Added “${term}”`);
     }
 
     termInput.value = '';
     meaningInput.value = '';
     document.getElementById('glossary-search').value = '';
     termInput.focus();
-    showToast(`Added “${term}”`);
     renderGlossary();
   });
+
+  makeSortable(document.getElementById('glossary-list'), 'li[data-id]', persistGlossaryOrder);
 
   document.getElementById('glossary-list').addEventListener('click', async (e) => {
     const li = e.target.closest('li');
@@ -540,7 +572,7 @@ function renderExistingMediaPreview() {
   }
 
   container.innerHTML = `
-    <p class="section-note">Photos, videos and recordings so far, in the order they'll appear. Drag &#10303; to reorder. Name each one and add a note if it helps, both show up when it's opened.</p>
+    <p class="section-note">Drag &#10303; to reorder. Names and notes appear when a file is opened.</p>
     <div class="media-editor"></div>
   `;
 
@@ -684,6 +716,8 @@ async function handleRecipeSubmit(e) {
     media: currentMedia,
     order,
     createdAt: editingRecipe ? editingRecipe.createdAt : Date.now(),
+    /* Marks this as changed in this browser, so built-in updates leave it be. */
+    editedAt: Date.now(),
   };
 
   await dbPut('recipes', recipe);
@@ -778,6 +812,10 @@ function setupRecipeForm() {
 
   document.getElementById('add-ingredient').addEventListener('click', () => addIngredientRow());
   document.getElementById('add-step').addEventListener('click', () => addStepRow());
+
+  document.getElementById('add-media').addEventListener('click', () => {
+    document.getElementById('field-media').click();
+  });
 
   document.getElementById('field-media').addEventListener('change', (e) => {
     const files = Array.from(e.target.files);
@@ -956,12 +994,269 @@ function shareFileName(item) {
   const base = (item.name || DEFAULT_SHARE_NAME[item.type] || 'photo')
     .replace(/\.[a-z0-9]{2,4}$/i, '')
     .replace(/[\\/:*?"<>|]+/g, '')
+    .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 60) || 'photo';
   return `${base}.${ext}`;
 }
 
-async function shareRecipe(recipe) {
+/* ---------- Recipe card image (for sharing) ---------- */
+
+/* Many apps (WhatsApp, Messages, AirDrop) keep only the pictures when a share
+   carries both text and photos. So the whole recipe also goes as a picture:
+   a scrapbook card drawn on a canvas, sent ahead of the photos. Cards are
+   drawn ahead of time, because the share sheet has to open straight off the
+   click. */
+
+const CARD_WIDTH = 1080;
+const CARD_PAD = 84;
+const recipeCardCache = new Map();
+
+function recipeCardKey(recipe) {
+  const { nameEn, nameCn, story, ingredients, steps } = recipe;
+  const photos = cardPhotoItems(recipe).map((m) => m.id);
+  return JSON.stringify([nameEn, nameCn, story, ingredients, steps, photos]);
+}
+
+/* Breaks text into lines that fit. Chinese can break between any two
+   characters; Latin text only between words. */
+function wrapText(ctx, text, maxWidth) {
+  const tokens = String(text || '').match(/[⺀-鿿豈-﫿＀-￯　-〿]|[^\s⺀-鿿豈-﫿＀-￯　-〿]+\s*|\s+/g) || [];
+  const lines = [];
+  let line = '';
+  for (const token of tokens) {
+    const next = line + token;
+    if (line && ctx.measureText(next.trimEnd()).width > maxWidth) {
+      lines.push(line.trimEnd());
+      line = token.trimStart();
+    } else {
+      line = next;
+    }
+  }
+  if (line.trim()) lines.push(line.trimEnd());
+  return lines.length ? lines : [''];
+}
+
+/* Lays the card out once to measure its height, then again to draw it.
+   photos: decoded images for the thumbnail strip under the story. */
+function paintRecipeCard(ctx, recipe, draw, photos = []) {
+  const css = getComputedStyle(document.documentElement);
+  const color = (name, fallback) => css.getPropertyValue(name).trim() || fallback;
+  const ink = color('--ink', '#3a2a1e');
+  const inkSoft = color('--ink-soft', '#6b5a48');
+  const accent = color('--accent', '#b7472a');
+  const accentSoft = color('--accent-soft', '#c98a4b');
+  const line = color('--line', 'rgba(58, 42, 30, 0.14)');
+  const serif = "'Noto Serif SC', serif";
+  const hand = "'Caveat', cursive";
+  const inner = CARD_WIDTH - CARD_PAD * 2;
+  let y = CARD_PAD;
+
+  const text = (str, x, font, fill) => {
+    if (!draw) return;
+    ctx.font = font;
+    ctx.fillStyle = fill;
+    ctx.fillText(str, x, y);
+  };
+  /* Draws wrapped text with its first baseline at y; returns the distance
+     from that baseline to the last one. */
+  const block = (str, x, width, font, fill, lineHeight) => {
+    ctx.font = font;
+    const lines = wrapText(ctx, str, width);
+    if (draw) {
+      ctx.fillStyle = fill;
+      lines.forEach((l, i) => ctx.fillText(l, x, y + i * lineHeight));
+    }
+    return (lines.length - 1) * lineHeight;
+  };
+  const rule = (dashed) => {
+    if (!draw) return;
+    ctx.save();
+    ctx.strokeStyle = line;
+    ctx.lineWidth = 2;
+    if (dashed) ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.moveTo(CARD_PAD, y);
+    ctx.lineTo(CARD_WIDTH - CARD_PAD, y);
+    ctx.stroke();
+    ctx.restore();
+  };
+  const heading = (en, cn) => {
+    y += 64;
+    ctx.font = `600 40px ${serif}`;
+    const w = ctx.measureText(en).width;
+    text(en, CARD_PAD, `600 40px ${serif}`, ink);
+    text(cn, CARD_PAD + w + 16, `400 30px ${serif}`, inkSoft);
+    y += 30;
+  };
+
+  ctx.textBaseline = 'alphabetic';
+
+  // Kicker, title and Chinese name
+  text('家常菜 · Taste of Home', CARD_PAD, `700 34px ${hand}`, accent);
+  y += 84;
+  y += block(recipe.nameEn, CARD_PAD, inner, `600 60px ${serif}`, ink, 80);
+  if (recipe.nameCn) {
+    y += 68;
+    text(recipe.nameCn, CARD_PAD, `400 40px ${serif}`, inkSoft);
+  }
+
+  // Story
+  if (recipe.story) {
+    y += 72;
+    y += block(recipe.story, CARD_PAD, inner, `italic 400 31px ${serif}`, inkSoft, 54);
+  }
+
+  // Photo strip: up to four, cropped to fill equal 4:3 frames
+  if (photos.length) {
+    y += 48;
+    const gap = 18;
+    const w = (inner - gap * (photos.length - 1)) / photos.length;
+    const h = Math.round(w * (photos.length === 1 ? 0.6 : 0.75));
+    if (draw) {
+      photos.forEach((img, i) => {
+        const x = CARD_PAD + i * (w + gap);
+        const scale = Math.max(w / img.width, h / img.height);
+        const sw = w / scale;
+        const sh = h / scale;
+        ctx.save();
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(x, y, w, h, 6);
+        else ctx.rect(x, y, w, h);
+        ctx.clip();
+        ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, x, y, w, h);
+        ctx.restore();
+      });
+    }
+    y += h;
+  }
+
+  // Ingredients: her words in one column, mine in the next
+  if (recipe.ingredients.length) {
+    y += 64;
+    rule(false);
+    heading('Ingredients', '材料');
+    const herWidth = inner * 0.42;
+    const arrowX = CARD_PAD + herWidth + 18;
+    const mineX = arrowX + 54;
+    const mineWidth = CARD_WIDTH - CARD_PAD - mineX;
+    recipe.ingredients.forEach((row) => {
+      y += 28;
+      rule(true);
+      y += 54;
+      const top = y;
+      const herHeight = block(row.her || '', CARD_PAD, herWidth, `400 30px ${serif}`, ink, 46);
+      text('→', arrowX, `400 30px ${serif}`, accentSoft);
+      const mineHeight = block(row.mine || '', mineX, mineWidth, `400 30px ${serif}`, accent, 46);
+      y = top + Math.max(herHeight, mineHeight);
+    });
+  }
+
+  // Steps, numbered in the hand font
+  if (recipe.steps.length) {
+    y += 76;
+    rule(false);
+    heading('Steps', '做法');
+    recipe.steps.forEach((step, i) => {
+      y += i ? 72 : 58;
+      text(`${i + 1}.`, CARD_PAD, `700 38px ${hand}`, accent);
+      y += block(step, CARD_PAD + 58, inner - 58, `400 30px ${serif}`, ink, 50);
+    });
+  }
+
+  // Sign-off
+  y += 80;
+  rule(true);
+  y += 60;
+  text('From 家常菜 · Taste of Home, by Mei Jun · kuehmachine.com', CARD_PAD, `500 32px ${hand}`, inkSoft);
+  return y + CARD_PAD - 24;
+}
+
+/* The first few photos, decoded small, for the card's thumbnail strip. Files
+   only shown from ./media/ are fetched first; opened straight off the disk
+   they'd make the canvas unexportable, so they're left out there. */
+const CARD_PHOTOS = 4;
+
+function cardPhotoItems(recipe) {
+  return (recipe.media || []).filter((m) => m.type === 'image').slice(0, CARD_PHOTOS);
+}
+
+async function loadCardPhotos(recipe) {
+  const photos = [];
+  for (const item of cardPhotoItems(recipe)) {
+    try {
+      const blob = item.blob || (canFetchLocalFiles() ? await mediaBlob(item) : null);
+      if (!blob) continue;
+      photos.push(await createImageBitmap(blob, { resizeWidth: 520, resizeQuality: 'high' }));
+    } catch {
+      // leave that one out
+    }
+  }
+  return photos;
+}
+
+async function drawRecipeCard(recipe) {
+  /* Google Fonts serves Chinese in slices, so ask for the glyphs this recipe
+     actually uses before drawing, or the canvas falls back to a system font. */
+  const sample = [recipe.nameEn, recipe.nameCn, recipe.story,
+    ...recipe.ingredients.flatMap((r) => [r.her, r.mine]), ...recipe.steps,
+    '家常菜 材料 做法 Taste of Home →'].join(' ');
+  if (document.fonts && document.fonts.load) {
+    try {
+      await Promise.all([
+        document.fonts.load("400 30px 'Noto Serif SC'", sample),
+        document.fonts.load("600 30px 'Noto Serif SC'", sample),
+        document.fonts.load("700 30px 'Caveat'", sample),
+        document.fonts.load("500 30px 'Caveat'", sample),
+      ]);
+    } catch {
+      // draw with whatever fonts are there
+    }
+  }
+
+  const photos = await loadCardPhotos(recipe);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = CARD_WIDTH;
+  canvas.height = Math.ceil(paintRecipeCard(ctx, recipe, false, photos));
+
+  const css = getComputedStyle(document.documentElement);
+  ctx.fillStyle = css.getPropertyValue('--paper-card').trim() || '#fbf4e6';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  paintRecipeCard(ctx, recipe, true, photos);
+  photos.forEach((p) => p.close && p.close());
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+}
+
+/* The card for this recipe as it stands, drawing it if it isn't ready. */
+async function recipeCardBlob(recipe) {
+  const key = recipeCardKey(recipe);
+  const cached = recipeCardCache.get(recipe.id);
+  if (cached && cached.key === key) return cached.blob;
+  const blob = await drawRecipeCard(recipe);
+  if (blob) recipeCardCache.set(recipe.id, { key, blob });
+  return blob;
+}
+
+/* Only what's already drawn, so sharing never has to wait. */
+function readyRecipeCard(recipe) {
+  const cached = recipeCardCache.get(recipe.id);
+  return cached && cached.key === recipeCardKey(recipe) ? cached.blob : null;
+}
+
+async function prepareRecipeCards(recipes) {
+  for (const recipe of recipes) {
+    try {
+      await recipeCardBlob(recipe);
+    } catch (err) {
+      console.warn('Could not draw the recipe card for', recipe.nameEn, err);
+    }
+  }
+}
+
+/* The whole recipe as plain text, for the share sheet and the clipboard. */
+function recipeText(recipe) {
   const lines = [`${recipe.nameEn}${recipe.nameCn ? ` · ${recipe.nameCn}` : ''}`];
   if (recipe.story) lines.push('', recipe.story);
   if (recipe.ingredients.length) {
@@ -975,38 +1270,232 @@ async function shareRecipe(recipe) {
     recipe.steps.forEach((step, i) => lines.push(`${i + 1}. ${step}`));
   }
   lines.push('', 'From 家常菜 · Taste of Home — kuehmachine.com');
-  const text = lines.join('\n');
-  const shareData = { title: recipe.nameEn, text };
+  return lines.join('\n');
+}
 
-  if (navigator.canShare && recipe.media && recipe.media.some((m) => m.blob)) {
+const SHARE_PHOTOS = 3;
+
+/* "Hainanese Yi Bua Kueh recipe.png": the bracketed gloss would push the
+   name past the length limit. */
+function recipeCardFileName(recipe) {
+  const shortName = recipe.nameEn.replace(/\s*\([^)]*\)/g, '').slice(0, 50);
+  return shareFileName({ name: shortName, type: 'image', blob: { type: 'image/png' } })
+    .replace(/\.png$/, ' recipe.png');
+}
+
+function sharePhotos(recipe) {
+  return (recipe.media || []).filter((m) => m.blob && m.type === 'image').slice(0, SHARE_PHOTOS);
+}
+
+/* Opens the system share sheet with the recipe card leading (so apps that
+   keep only pictures still get the whole recipe), then the photos, with the
+   text alongside. Resolves to 'shared', 'cancelled' or 'failed'. */
+async function shareNatively(recipe) {
+  const shareData = { title: recipe.nameEn, text: recipeText(recipe) };
+
+  if (navigator.canShare) {
     try {
-      const files = recipe.media.filter((m) => m.blob).slice(0, 4).map(
-        (m) =>
-          new File([m.blob], shareFileName(m), {
-            type: m.blob.type || DEFAULT_SHARE_TYPE[m.type] || 'image/jpeg',
-          })
-      );
-      if (navigator.canShare({ files })) shareData.files = files;
+      const card = readyRecipeCard(recipe) || (await recipeCardBlob(recipe));
+      const files = [];
+      if (card) files.push(new File([card], recipeCardFileName(recipe), { type: 'image/png' }));
+      sharePhotos(recipe).forEach((m) => {
+        files.push(new File([m.blob], shareFileName(m), { type: m.blob.type || 'image/jpeg' }));
+      });
+      if (files.length && navigator.canShare({ files })) shareData.files = files;
     } catch {
       // share without files
     }
   }
 
-  if (navigator.share) {
-    try {
-      await navigator.share(shareData);
-      return;
-    } catch (err) {
-      if (err.name === 'AbortError') return;
+  try {
+    await navigator.share(shareData);
+    return 'shared';
+  } catch (err) {
+    if (err.name === 'AbortError') return 'cancelled';
+    /* Some share targets turn down attached files; the text still goes. */
+    if (shareData.files) {
+      try {
+        delete shareData.files;
+        await navigator.share(shareData);
+        return 'shared';
+      } catch (retryErr) {
+        if (retryErr.name === 'AbortError') return 'cancelled';
+      }
     }
+    return 'failed';
   }
+}
+
+/* ---------- Share panel ---------- */
+
+/* Share opens this panel rather than going straight out: it shows the recipe
+   card that will be sent and offers every way to send it, including the ones
+   a desktop browser without a share sheet can still do. */
+let sharePanelRecipe = null;
+let sharePanelReturnFocus = null;
+let sharePreviewUrl = null;
+
+function shareRecipe(recipe) {
+  openSharePanel(recipe);
+}
+
+function setShareStatus(message) {
+  document.getElementById('share-status').textContent = message;
+}
+
+async function openSharePanel(recipe) {
+  sharePanelRecipe = recipe;
+  sharePanelReturnFocus = document.activeElement;
+
+  const canShare = Boolean(navigator.share);
+
+  document.getElementById('share-dish').textContent = [recipe.nameEn, recipe.nameCn].filter(Boolean).join(' · ');
+  document.getElementById('share-summary').textContent = canShare
+    ? 'Share this recipe and the memories that come with it.'
+    : 'Download the card to send it on, or save the recipe as a PDF to print.';
+
+  const nativeBtn = document.getElementById('share-native');
+  nativeBtn.innerHTML = `${ICON.share}<span>Share…</span>`;
+  nativeBtn.hidden = !canShare;
+  document.getElementById('share-download').innerHTML = `${ICON.download}<span>Download recipe card</span>`;
+  document.getElementById('share-pdf').innerHTML = `${ICON.pdf}<span>Save as PDF</span>`;
+  setShareStatus('');
+
+  const preview = document.getElementById('share-preview');
+  preview.innerHTML = '<p class="share-preview-wait">Drawing the card…</p>';
+  preview.scrollTop = 0;
+
+  document.getElementById('share-overlay').classList.remove('hidden');
+  document.body.classList.add('modal-open');
+  /* Focus the panel itself: keyboard users tab straight to the buttons, and
+     nobody sees a focus ring on Share before they've done anything. */
+  document.getElementById('share-card').focus({ preventScroll: true });
 
   try {
-    await navigator.clipboard.writeText(text);
-    showToast('Recipe copied to clipboard');
+    const blob = await recipeCardBlob(recipe);
+    if (sharePanelRecipe !== recipe || !blob) return;
+    if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
+    sharePreviewUrl = URL.createObjectURL(blob);
+    preview.innerHTML = `<img src="${sharePreviewUrl}" alt="">`;
+    /* A brief glimpse of the thumb, so it's clear the card scrolls. */
+    preview.querySelector('img').addEventListener('load', () => showShareScrollThumb(), { once: true });
   } catch {
-    window.prompt('Copy this recipe:', text);
+    preview.innerHTML = '<p class="share-preview-wait">The card couldn’t be drawn here.</p>';
   }
+}
+
+function closeSharePanel() {
+  document.getElementById('share-overlay').classList.add('hidden');
+  if (document.querySelectorAll('.form-overlay:not(.hidden)').length === 0) {
+    document.body.classList.remove('modal-open');
+  }
+  if (sharePreviewUrl) {
+    URL.revokeObjectURL(sharePreviewUrl);
+    sharePreviewUrl = null;
+  }
+  sharePanelRecipe = null;
+  if (sharePanelReturnFocus && sharePanelReturnFocus.focus) {
+    sharePanelReturnFocus.focus({ preventScroll: true });
+  }
+}
+
+/* ---------- Quiet scrollbars ---------- */
+
+/* A short, thin scroll thumb that shows while something scrolls and fades a
+   moment after it stops, in place of the browser's own scrollbar (hidden by
+   the .quiet-scroll class). The thumb lives in `host`, a positioned element
+   that holds the scroller but doesn't scroll itself. */
+const QUIET_THUMB = 36;
+const QUIET_INSET = 8;
+
+function attachQuietScrollbar(scroller, host) {
+  scroller.classList.add('quiet-scroll');
+  const thumb = document.createElement('span');
+  thumb.className = 'quiet-thumb';
+  thumb.setAttribute('aria-hidden', 'true');
+  host.appendChild(thumb);
+  let timer = null;
+
+  function show() {
+    const range = scroller.scrollHeight - scroller.clientHeight;
+    if (range <= 0) {
+      thumb.classList.remove('visible');
+      return;
+    }
+    const track = scroller.clientHeight - QUIET_THUMB - QUIET_INSET * 2;
+    const top = scroller.offsetTop + QUIET_INSET + (scroller.scrollTop / range) * track;
+    thumb.style.transform = `translateY(${top}px)`;
+    thumb.classList.add('visible');
+    clearTimeout(timer);
+    timer = setTimeout(() => thumb.classList.remove('visible'), 900);
+  }
+
+  scroller.addEventListener('scroll', show, { passive: true });
+  return show;
+}
+
+let showShareScrollThumb = () => {};
+
+function setupSharePanel() {
+  const overlay = document.getElementById('share-overlay');
+  const preview = document.getElementById('share-preview');
+  showShareScrollThumb = attachQuietScrollbar(preview, preview.parentElement);
+
+  document.getElementById('share-close').addEventListener('click', closeSharePanel);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeSharePanel();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || overlay.classList.contains('hidden')) return;
+    e.stopPropagation();
+    closeSharePanel();
+  }, true);
+
+  document.getElementById('share-native').addEventListener('click', async () => {
+    const recipe = sharePanelRecipe;
+    if (!recipe) return;
+    const result = await shareNatively(recipe);
+    if (result === 'shared') {
+      closeSharePanel();
+      showToast('Recipe shared');
+    } else if (result === 'failed') {
+      setShareStatus('The share sheet couldn’t open here. Download the card and send it instead.');
+    }
+  });
+
+  document.getElementById('share-download').addEventListener('click', async () => {
+    const recipe = sharePanelRecipe;
+    if (!recipe) return;
+    const blob = await recipeCardBlob(recipe);
+    if (!blob) {
+      setShareStatus('The card couldn’t be drawn here. Try Save as PDF instead.');
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = recipeCardFileName(recipe);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    const status = document.getElementById('share-status');
+    const file = document.createElement('em');
+    file.textContent = link.download;
+    status.replaceChildren('Saved ', file, ' to your downloads.');
+  });
+
+  /* The print stylesheet lays out the open recipe pop-up, so open it first
+     when sharing started from a card. */
+  document.getElementById('share-pdf').addEventListener('click', async () => {
+    const recipe = sharePanelRecipe;
+    if (!recipe) return;
+    closeSharePanel();
+    const detail = document.getElementById('recipe-detail');
+    const detailOpen = !document.getElementById('recipe-detail-overlay').classList.contains('hidden');
+    if (!detailOpen || detail.dataset.id !== recipe.id) await openRecipeDetail(recipe);
+    printRecipe(recipe);
+  });
 }
 
 /* ---------- Backup & restore ---------- */
@@ -1115,6 +1604,11 @@ function setupBackup() {
 
 /* Object URLs handed out to the current set of cards, revoked on re-render. */
 let cardObjectUrls = [];
+
+/* The recipes on screen, by id. Sharing reads from here rather than from
+   IndexedDB, because the share sheet only opens straight off a click: an
+   await in between can cost the browser's permission to show it. */
+const recipeCache = new Map();
 
 function mediaUrl(blob) {
   const url = URL.createObjectURL(blob);
@@ -1278,9 +1772,13 @@ async function renderRecipes() {
   let recipes = await dbGetAll('recipes');
   recipes = await ensureRecipeOrder(recipes);
   recipes.sort((a, b) => a.order - b.order);
+  recipeCache.clear();
+  recipes.forEach((r) => recipeCache.set(r.id, r));
 
   const built = await Promise.all(recipes.map((recipe, index) => buildRecipeCard(recipe, index, recipes.length)));
   built.forEach((card) => grid.appendChild(card));
+  /* Draw the share cards once the page is up, one at a time. */
+  setTimeout(() => prepareRecipeCards(recipes), 500);
 }
 
 async function buildRecipeCard(recipe, index, total) {
@@ -1340,6 +1838,8 @@ async function buildRecipeCard(recipe, index, total) {
 /* ---------- Recipe detail overlay ---------- */
 
 async function openRecipeDetail(recipe) {
+  recipeCache.set(recipe.id, recipe);
+  recipeCardBlob(recipe).catch(() => {});
   const overlay = document.getElementById('recipe-detail-overlay');
   const panel = document.getElementById('recipe-detail');
 
@@ -1439,6 +1939,8 @@ const ICON = {
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3"/><path d="M8.5 6.5L12 3l3.5 3.5"/><path d="M5 12v7a1.5 1.5 0 001.5 1.5h11A1.5 1.5 0 0019 19v-7"/></svg>',
   edit:
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10a2.1 2.1 0 10-3-3L5 17v3z"/><path d="M14.5 6.5l3 3"/></svg>',
+  download:
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M8 11.5l4 4 4-4"/><path d="M5 19.5h14"/></svg>',
   trash:
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M10 4h4a1 1 0 011 1v2H9V5a1 1 0 011-1z"/><path d="M6 7l1 12.5a1.5 1.5 0 001.5 1.4h7a1.5 1.5 0 001.5-1.4L18 7"/><path d="M10.5 11v6M13.5 11v6"/></svg>',
 };
@@ -1597,20 +2099,20 @@ function setupRecipeDetail() {
       await openViewerFromTile(tile);
       return;
     }
+    /* closest(), not the click target itself: a click on the button's
+       label lands on its <span>, which used to do nothing. */
     const panel = document.getElementById('recipe-detail');
-    if (e.target.classList.contains('detail-pdf')) {
-      const recipe = await dbGet('recipes', panel.dataset.id);
+    const id = panel.dataset.id;
+    if (e.target.closest('.detail-share')) {
+      const recipe = recipeCache.get(id) || (await dbGet('recipes', id));
+      if (recipe) shareRecipe(recipe);
+    } else if (e.target.closest('.detail-pdf')) {
+      const recipe = recipeCache.get(id) || (await dbGet('recipes', id));
       if (recipe) printRecipe(recipe);
-      return;
-    }
-
-    if (e.target.classList.contains('detail-edit')) {
-      const recipe = await dbGet('recipes', panel.dataset.id);
+    } else if (e.target.closest('.detail-edit')) {
+      const recipe = await dbGet('recipes', id);
       closeRecipeDetail();
       openRecipeForm(recipe);
-    } else if (e.target.classList.contains('detail-share')) {
-      const recipe = await dbGet('recipes', panel.dataset.id);
-      shareRecipe(recipe);
     }
   });
 
@@ -1643,7 +2145,7 @@ function setupRecipeCardActions() {
     const card = e.target.closest('.recipe-card[data-id]');
     if (!card) return;
 
-    if (e.target.classList.contains('delete-recipe')) {
+    if (e.target.closest('.delete-recipe')) {
       const recipe = await dbGet('recipes', card.dataset.id);
       const thumbIds = recipe ? (recipe.media || []).map((m) => m.id) : [];
       const name = recipe ? recipe.nameEn : 'this recipe';
@@ -1657,12 +2159,12 @@ function setupRecipeCardActions() {
       await dbDelete('recipes', card.dataset.id);
       for (const id of thumbIds) await dbDelete('thumbs', id);
       renderRecipes();
-    } else if (e.target.classList.contains('edit-recipe')) {
+    } else if (e.target.closest('.edit-recipe')) {
       const recipe = await dbGet('recipes', card.dataset.id);
       openRecipeForm(recipe);
-    } else if (e.target.classList.contains('share-recipe')) {
-      const recipe = await dbGet('recipes', card.dataset.id);
-      shareRecipe(recipe);
+    } else if (e.target.closest('.share-recipe')) {
+      const recipe = recipeCache.get(card.dataset.id) || (await dbGet('recipes', card.dataset.id));
+      if (recipe) shareRecipe(recipe);
     } else if (!e.target.closest('.card-actions') && !card.classList.contains('dragging')) {
       const recipe = await dbGet('recipes', card.dataset.id);
       if (recipe) await openRecipeDetail(recipe);
@@ -1746,6 +2248,8 @@ async function init() {
   renderGlossary();
 
   setupRecipeForm();
+  const story = document.getElementById('field-story');
+  attachQuietScrollbar(story, story.parentElement);
   setupReordering();
   setupRecipeCardActions();
   setupRecipeDragging();
@@ -1753,6 +2257,7 @@ async function init() {
   setupMediaViewer();
   setupVoiceInput();
   setupBackup();
+  setupSharePanel();
   await renderRecipes();
   fetchSeedMediaInBackground().catch((err) => console.warn('Background media fetch stopped:', err));
 }

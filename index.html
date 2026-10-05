@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=20261003">
+  <link rel="stylesheet" href="./style.css?v=202610051930">
 </head>
 <body>
 
@@ -63,13 +63,13 @@
 
         <label>Dish name (English)
           <span class="field-with-mic">
-            <input type="text" id="field-name-en" required>
+            <input type="text" id="field-name-en" placeholder="What you call it, e.g. Yam Cake" required>
             <button type="button" class="mic-btn" data-target="field-name-en" data-lang="en-SG" aria-label="Record the English name with voice"></button>
           </span>
         </label>
         <label>Dish name (Chinese)
           <span class="field-with-mic">
-            <input type="text" id="field-name-cn">
+            <input type="text" id="field-name-cn" placeholder="What she calls it, e.g. 芋头糕">
             <button type="button" class="mic-btn" data-target="field-name-cn" data-lang="zh-CN" aria-label="Record the Chinese name with voice"></button>
           </span>
         </label>
@@ -96,10 +96,16 @@
           <div id="step-rows"></div>
         </div>
 
-        <label>Photos, videos, voice recordings
-          <input type="file" id="field-media" accept="image/*,video/*,audio/*" multiple>
-        </label>
-        <div id="existing-media-preview"></div>
+        <!-- The native file input stays hidden; the pill opens it, matching
+             "+ Add ingredient" and "+ Add step". -->
+        <div class="form-block">
+          <div class="form-block-header">
+            <span id="media-label">Photos, videos, voice recordings</span>
+            <button type="button" id="add-media" class="mini-btn">+ Add files</button>
+          </div>
+          <input type="file" id="field-media" accept="image/*,video/*,audio/*" multiple hidden aria-labelledby="media-label">
+          <div id="existing-media-preview"></div>
+        </div>
 
         <div class="form-actions">
           <button type="submit" id="recipe-form-submit" class="primary-btn">Save recipe</button>
@@ -109,22 +115,29 @@
 
     <section id="glossary" class="section">
       <h2>The Glossary <span class="cn">度量对照</span></h2>
-      <p class="section-note">A running translation of the vague measurements mums everywhere seem to speak in fluently.</p>
+      <p class="section-note">A running translation of the <span class="latin-quote">“</span><em>agak-agak</em><span class="latin-quote">”</span> (rough, by-feel) measurements Mum seems to speak fluently, decoded one phrase at a time.</p>
 
-      <div class="glossary-search-field">
-        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8L20 20"/></svg>
-        <input type="search" id="glossary-search" class="glossary-search" placeholder="Search the glossary…" aria-label="Search the glossary">
+      <!-- Adding, and what's been decoded so far, on one pasted-in sheet. -->
+      <div class="glossary-card">
+        <h3 class="glossary-subhead" id="glossary-add-title">Add a new phrase</h3>
+        <div class="glossary-add" role="group" aria-labelledby="glossary-add-title">
+          <input type="text" id="glossary-term" placeholder="What Mum says: e.g. 一点点" aria-label="Her phrase">
+          <span class="arrow" aria-hidden="true">→</span>
+          <input type="text" id="glossary-meaning" placeholder="What it really means: ~½ tbsp" aria-label="Real measurement">
+          <button type="button" id="glossary-submit" class="mini-btn" aria-label="Add to glossary">+ Add</button>
+        </div>
+
+        <h3 class="glossary-subhead glossary-subhead-split">What I have decoded so far</h3>
+        <div class="glossary-search-row">
+          <div class="glossary-search-field">
+            <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8L20 20"/></svg>
+            <input type="search" id="glossary-search" class="glossary-search" placeholder="Search the glossary…" aria-label="Search the glossary">
+            <span class="glossary-count" id="glossary-count" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <ul class="glossary-list" id="glossary-list"></ul>
       </div>
-
-      <div class="glossary-add">
-        <input type="text" id="glossary-term" placeholder="Her phrase (e.g. 一点点 or &quot;a splash&quot;)" aria-label="Her phrase">
-        <input type="text" id="glossary-meaning" placeholder="Real measurement (e.g. ~1/2 tbsp)" aria-label="Real measurement">
-        <button type="button" id="glossary-submit" class="mini-btn">+ Add to glossary</button>
-      </div>
-
-      <p class="glossary-count" id="glossary-count"></p>
-
-      <ul class="glossary-list" id="glossary-list"></ul>
     </section>
 
   </main>
@@ -156,6 +169,29 @@
     <button type="button" class="viewer-nav next" id="media-next" aria-label="Next">›</button>
   </div>
 
+  <!-- Share panel: shows the recipe card that goes out, and the ways to send
+       it. Reuses the confirm dialog's overlay, so it prints as nothing. -->
+  <div id="share-overlay" class="confirm-overlay share-overlay hidden">
+    <div class="confirm-card share-card" id="share-card" role="dialog" aria-modal="true" aria-labelledby="share-title" tabindex="-1">
+      <button type="button" id="share-close" class="close-btn" aria-label="Close">×</button>
+      <!-- The frame tilts and holds the scroll thumb; the card scrolls inside. -->
+      <div class="share-preview-frame" aria-hidden="true">
+        <div class="share-preview" id="share-preview"></div>
+      </div>
+      <div class="share-body">
+        <h3 id="share-title">Share this recipe</h3>
+        <p class="share-dish" id="share-dish"></p>
+        <p class="share-summary" id="share-summary"></p>
+        <div class="share-actions">
+          <button type="button" id="share-native" class="primary-btn"></button>
+          <button type="button" id="share-download" class="mini-btn"></button>
+          <button type="button" id="share-pdf" class="mini-btn"></button>
+        </div>
+        <p class="share-status" id="share-status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+
   <div id="confirm-overlay" class="confirm-overlay hidden">
     <div class="confirm-card" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-body">
       <h3 id="confirm-title"></h3>
@@ -169,7 +205,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
-  <script src="./recipes-seed.js?v=20261003"></script>
-  <script src="./script.js?v=20261003"></script>
+  <script src="./recipes-seed.js?v=202610051930"></script>
+  <script src="./script.js?v=202610051930"></script>
 </body>
 </html>
