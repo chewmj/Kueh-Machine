@@ -2007,23 +2007,15 @@ async function openRecipeDetail(recipe) {
   );
   const galleryHtml = visual.length ? `<div class="detail-gallery">${galleryTiles.join('')}</div>` : '';
 
-  /* Her voice notes get the site's own player rather than the browser's grey
-     one: wired up by setupVoiceNotes once the panel is in the page. */
-  const audioItems = recordings.map((m) => {
-    const name = (m.name || 'Recording').replace(/\.[a-z0-9]{2,4}$/i, '');
-    return `<li class="voice-note">
-        <audio src="${mediaSrc(m)}" preload="metadata"></audio>
-        <button type="button" class="voice-play" aria-label="Play ${name}">${ICON.play}</button>
-        <div class="voice-main">
-          <div class="voice-head">
-            <span class="audio-name">${ICON.mic}<span>${name}</span></span>
-            <span class="voice-time" aria-hidden="true">0:00</span>
-          </div>
-          <input type="range" class="voice-seek" min="0" max="1000" value="0" step="1" aria-label="Position in ${name}">
-          ${m.description ? `<span class="audio-note">${m.description}</span>` : ''}
-        </div>
-      </li>`;
-  });
+  const audioItems = await Promise.all(
+    recordings.map(
+      async (m) => `<li>
+        <span class="audio-name">🎙 ${m.name || 'Recording'}</span>
+        ${m.description ? `<span class="audio-note">${m.description}</span>` : ''}
+        ${await mediaTag(m, recipe.nameEn, { playable: true })}
+      </li>`
+    )
+  );
   const audioHtml = recordings.length
     ? `<div class="detail-block">
          <h4>In her own words <span class="cn">原话</span></h4>
@@ -2069,82 +2061,10 @@ async function openRecipeDetail(recipe) {
 
   panel.dataset.id = recipe.id;
   panel.scrollTop = 0;
-  setupVoiceNotes(panel);
   overlay.classList.remove('hidden');
   document.body.classList.add('modal-open');
   panel.tabIndex = -1;
   panel.focus({ preventScroll: true });
-}
-
-/* ---------- Voice note player ---------- */
-
-function formatClock(seconds) {
-  if (!Number.isFinite(seconds)) return '0:00';
-  const s = Math.max(0, Math.floor(seconds));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-}
-
-function setupVoiceNotes(panel) {
-  const notes = Array.from(panel.querySelectorAll('.voice-note'));
-  notes.forEach((note) => {
-    const audio = note.querySelector('audio');
-    const play = note.querySelector('.voice-play');
-    const seek = note.querySelector('.voice-seek');
-    const time = note.querySelector('.voice-time');
-    const name = note.querySelector('.audio-name span').textContent;
-    let dragging = false;
-
-    const paint = () => {
-      const duration = audio.duration;
-      const ratio = Number.isFinite(duration) && duration > 0 ? audio.currentTime / duration : 0;
-      if (!dragging) seek.value = Math.round(ratio * 1000);
-      seek.style.setProperty('--progress', `${(seek.value / 10).toFixed(1)}%`);
-      time.textContent = Number.isFinite(duration)
-        ? `${formatClock(audio.currentTime)} / ${formatClock(duration)}`
-        : formatClock(audio.currentTime);
-      seek.setAttribute('aria-valuetext', time.textContent);
-    };
-    const setPlaying = (playing) => {
-      note.classList.toggle('playing', playing);
-      play.innerHTML = playing ? ICON.pause : ICON.play;
-      play.setAttribute('aria-label', `${playing ? 'Pause' : 'Play'} ${name}`);
-    };
-
-    play.addEventListener('click', () => {
-      if (audio.paused) {
-        /* One voice at a time. */
-        notes.forEach((other) => other !== note && other.querySelector('audio').pause());
-        audio.play().catch((err) => {
-          /* NotAllowedError is the browser waiting for a real tap, not a
-             broken file, so only speak up for the rest. */
-          if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
-            showToast('This recording can’t play here');
-          }
-        });
-      } else {
-        audio.pause();
-      }
-    });
-    seek.addEventListener('input', () => {
-      dragging = true;
-      if (Number.isFinite(audio.duration)) {
-        audio.currentTime = (seek.value / 1000) * audio.duration;
-      }
-      paint();
-    });
-    seek.addEventListener('change', () => { dragging = false; });
-
-    audio.addEventListener('loadedmetadata', paint);
-    audio.addEventListener('timeupdate', paint);
-    audio.addEventListener('play', () => setPlaying(true));
-    audio.addEventListener('pause', () => setPlaying(false));
-    audio.addEventListener('ended', () => {
-      audio.currentTime = 0;
-      setPlaying(false);
-      paint();
-    });
-    paint();
-  });
 }
 
 function closeRecipeDetail() {
@@ -2174,10 +2094,6 @@ const ICON = {
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10a2.1 2.1 0 10-3-3L5 17v3z"/><path d="M14.5 6.5l3 3"/></svg>',
   download:
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M8 11.5l4 4 4-4"/><path d="M5 19.5h14"/></svg>',
-  play:
-    '<svg viewBox="0 0 24 24" aria-hidden="true" class="solid-icon"><path d="M8 5.5v13a1 1 0 001.5.86l10.5-6.5a1 1 0 000-1.72L9.5 4.64A1 1 0 008 5.5z"/></svg>',
-  pause:
-    '<svg viewBox="0 0 24 24" aria-hidden="true" class="solid-icon"><rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/></svg>',
   trash:
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M10 4h4a1 1 0 011 1v2H9V5a1 1 0 011-1z"/><path d="M6 7l1 12.5a1.5 1.5 0 001.5 1.4h7a1.5 1.5 0 001.5-1.4L18 7"/><path d="M10.5 11v6M13.5 11v6"/></svg>',
 };
