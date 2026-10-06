@@ -2496,6 +2496,10 @@ function voiceLangName(lang) {
   return lang === 'zh-CN' ? '中文' : 'English / Singlish';
 }
 
+/* iPhone and iPad (iPadOS also reports itself as a Mac, but with touch). */
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 /* What went wrong, in words someone holding a phone can act on. The browser
    only reports a code; left silent, a failed mic just looks broken. */
 function voiceErrorMessage(code, lang) {
@@ -2503,7 +2507,12 @@ function voiceErrorMessage(code, lang) {
     case 'not-allowed':
       return "The microphone is blocked. Allow it for this site (the icon in the address bar), and for your browser in your device's privacy settings, then try again.";
     case 'service-not-allowed':
-      return 'Voice input is switched off on this device. On iPhone, turn on Siri & Dictation in Settings, then try again.';
+      /* On iPhone this can happen even with dictation on: iOS only lets
+         Safari itself use it, and not always then. The keyboard's own mic
+         works in every field, so point there. */
+      return IS_IOS
+        ? "Your iPhone didn't let this page use dictation. The field is ready: tap the mic on your keyboard to speak instead. (The page's own mic works in Safari, with Dictation on in Settings.)"
+        : 'Voice input is switched off on this device. Check that dictation or speech recognition is allowed in your settings, then try again.';
     case 'audio-capture':
       return 'No microphone was found. Check one is connected and not in use by another app.';
     case 'network':
@@ -2556,9 +2565,14 @@ function setupVoiceInput() {
       : micBtn.closest('.field-with-mic').querySelector('input, textarea');
     if (!targetField) return;
 
+    listen(micBtn, targetField, getVoiceLang(micBtn), false);
+  });
+
+  /* retried: the second go, in the device's own dictation language, after
+     the first was refused for the field's language. */
+  function listen(micBtn, targetField, lang, retried) {
     const recognition = new SpeechRecognitionAPI();
-    const lang = getVoiceLang(micBtn);
-    recognition.lang = lang;
+    if (lang) recognition.lang = lang;
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     const session = { recognition, button: micBtn, heard: false, reported: false, stopped: false };
@@ -2568,7 +2582,9 @@ function setupVoiceInput() {
       if (active === session) active = null;
     };
 
-    recognition.onstart = () => showToast(`Listening in ${voiceLangName(lang)}… tap the mic again to stop`);
+    recognition.onstart = () => showToast(lang
+      ? `Listening in ${voiceLangName(lang)}… tap the mic again to stop`
+      : 'Listening… tap the mic again to stop');
     recognition.onresult = (event) => {
       session.heard = true;
       const transcript = event.results[0][0].transcript;
@@ -2579,15 +2595,24 @@ function setupVoiceInput() {
       finish();
       session.reported = true;
       if (event.error === 'aborted') return; // stopped on purpose
-      console.warn('Voice input error:', event.error, event.message || '');
-      showToast(voiceErrorMessage(event.error, lang));
+      console.warn('Voice input error:', event.error, event.message || '', lang || '(device language)');
+      /* Refused for this language (often because English (Singapore) or
+         Chinese isn't one of the phone's dictation languages): try once more
+         in the phone's own language before giving up. */
+      const refused = event.error === 'service-not-allowed' || event.error === 'language-not-supported';
+      if (refused && !retried && lang) {
+        listen(micBtn, targetField, '', true);
+        return;
+      }
+      if (IS_IOS && refused) targetField.focus();
+      showToast(voiceErrorMessage(event.error, lang || getVoiceLang(micBtn)));
     };
     /* Some browsers stop without an error when they catch no words; say so
        rather than leave the mic looking broken. */
     recognition.onend = () => {
       finish();
       if (!session.heard && !session.reported && !session.stopped) {
-        showToast(voiceErrorMessage('no-speech', lang));
+        showToast(voiceErrorMessage('no-speech', lang || getVoiceLang(micBtn)));
       }
     };
 
@@ -2597,9 +2622,12 @@ function setupVoiceInput() {
       active = session;
     } catch (err) {
       console.warn('Voice input could not start:', err);
-      showToast("Voice input couldn't start. Tap the mic to try again.");
+      if (IS_IOS) targetField.focus();
+      showToast(IS_IOS
+        ? "Voice input couldn't start here. The field is ready: tap the mic on your keyboard to speak instead."
+        : "Voice input couldn't start. Tap the mic to try again.");
     }
-  });
+  }
 }
 
 /* ---------- Init ---------- */
