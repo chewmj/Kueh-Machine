@@ -2,6 +2,7 @@
 .claude/settings.local.json
 Kueh Machine SS/
 Kueh Machine photos/
+Screenshots*/
 
 # Backup exports are huge (photos as base64) and rebuilt from the browser
 taste-of-home-backup-*.json

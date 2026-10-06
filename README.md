@@ -1,6 +1,6 @@
 # 家常菜 · Taste of Home
 
-By Mei Jun
+By Mei Jun · live at [kuehmachine.com/meijun](https://www.kuehmachine.com/meijun/)
 
 ## Concept
 
@@ -32,8 +32,10 @@ living only in one browser:
 - **Hainanese Yi Bua Kueh** 薏粑 — coconut palm sugar steamed cake
 - **Tang Yuan / Glutinous Rice Balls** 汤圆
 
-They load automatically in any browser, in the order set here. Their photos,
-video and voice recording are real files in `./media/`, referenced by relative
+Each has its photos and handwritten recipe, and a voice recording of mum
+explaining it; Orh Kueh, Fried Honeycomb and Tang Yuan also have short videos.
+They load automatically in any browser, in the order set here. The photos,
+videos and recordings are real files in `./media/`, referenced by relative
 path, and show straight from there while a copy is pulled into the browser in
 the background.
 
@@ -41,6 +43,10 @@ Each browser checks `recipes-seed.js` on every visit. A recipe it hasn't seen
 yet is added, and a built-in recipe nobody has edited in that browser is
 brought up to date. Anything edited or deleted in a browser stays that way
 there, and takes precedence over the built-in copy.
+
+The glossary works the same way: when the built-in list changes, each
+browser's copy is brought up to date, and any phrase a visitor added or edited
+themselves is kept after the built-in ones.
 
 If a browser blocks storage (some private windows, Safari opening the file
 straight off disk), the recipes still show; changes just don't outlast the
@@ -81,13 +87,16 @@ old version for days.
       gallery pop-up, photos again for a full-window view, and
       recordings play inside the recipe pop-up
 - [x] Growing, searchable glossary of vague measurement phrases → real
-      measurements
+      measurements, draggable into any order
 - [x] Voice-to-text capture (Mandarin + English/Singlish) for recording her
       spoken instructions while cooking
 - [x] Drag recipes, and the ingredients, steps and media within them, into the
       sequence they're told in
-- [x] Share a recipe out (native share sheet, or copied to clipboard as a
-      fallback), or save it as a PDF laid out for paper
+- [x] Share panel with a preview of the recipe card: share it as a one-page
+      PDF (story, photo strip, ingredients, steps, and a tappable link back to
+      kuehmachine.com/meijun) with a short message, download the card as an
+      image, or save the recipe as a PDF laid out for paper
+- [x] Each recipe has its own address (`#recipe=…`) that opens it directly
 - [x] Add photos/videos to a recipe's gallery without overwriting what's
       already there — remove individual items instead
 - [x] Back up everything (recipes, photos/videos, glossary) to one file, and
