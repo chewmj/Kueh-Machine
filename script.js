@@ -2643,12 +2643,13 @@ function setupVoiceInput() {
 
 /* The reader Worker (worker/recipe-reader.js) on Mei Jun's own Cloudflare
    account. Empty keeps the button hidden. */
-const RECIPE_READER_URL = '';
+const RECIPE_READER_URL = 'https://meijun-recipe-reader.chewmeijun014.workers.dev/';
 const NOTE_PHOTO_MAX = 1600;
 
 const NOTE_ERRORS = {
   daily_limit: 'The free reading allowance is used up for today. Try again tomorrow, or type this one in.',
   too_many_requests: 'That was a lot of notes in a minute. Wait a moment and try again.',
+  busy: "The reader is busy right now. Try again in a minute.",
   image_too_large: 'That photo is too large to send. Try a smaller one.',
   not_a_recipe: "That photo doesn't look like a recipe. Try a clearer photo of the note.",
   nothing_found: "Couldn't find any ingredients or steps in that photo. Try a clearer, closer photo.",
@@ -2713,7 +2714,7 @@ async function readHandwrittenNote(file) {
   try {
     const photo = await notePhotoAsJpeg(file);
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 60000);
+    const timer = setTimeout(() => controller.abort(), 150000);
     let response;
     try {
       response = await fetch(RECIPE_READER_URL, {

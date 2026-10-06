@@ -7,7 +7,7 @@
 
    Settings (Cloudflare dashboard -> this Worker -> Settings -> Variables):
      GEMINI_API_KEY   secret, from aistudio.google.com (free tier)
-     GEMINI_MODEL     optional, defaults to gemini-3.8-flash
+     GEMINI_MODEL     optional, tried first; otherwise the free models below
 
    Only answers the Taste of Home page itself, and only a few times a minute
    per visitor, so nobody else can use up the free allowance. */
@@ -17,7 +17,11 @@ const ALLOWED_ORIGINS = [
   'https://kuehmachine.com',
   'http://localhost:8080',
 ];
-const DEFAULT_MODEL = 'gemini-3.8-flash';
+/* Free-tier models, best first. The newest is often busy on the free tier,
+   so a busy or rate-limited model hands over to the next. */
+const FREE_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+/* The first model gets longest: reading handwriting can take a while. */
+const attemptTimeout = (index) => (index === 0 ? 75000 : 35000);
 const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
 const RATE_LIMIT = { windowMs: 60 * 1000, requests: 6 };
 const recentRequests = new Map();
@@ -31,7 +35,7 @@ Return only a JSON object, with no other text, in exactly this shape:
   "ingredients": [
     { "her": "the ingredient exactly as she wrote it, simplified characters, keeping her numbers and units", "mine": "a clear English translation with the quantity, e.g. 'Brown sugar 7 tbsp'" }
   ],
-  "steps": ["one step per item, in clear English, in her order"],
+  "steps": ["one step per item, translated into clear English, in cooking order"],
   "unsure": ["anything you could not read with confidence, or had to assume, in a short English phrase"]
 }
 
@@ -39,7 +43,9 @@ Rules:
 - Read only what is written. Never invent ingredients, quantities or steps; if something is unreadable, leave it out of the lists and say so in "unsure".
 - Convert traditional characters to simplified in "her" and "nameCn", but keep her wording (e.g. 七汤匙, 1/4茶匙, 300gm).
 - gm of water means ml in "mine". 汤匙 is tbsp, 茶匙 is tsp. 黄糖 is brown sugar.
-- Steps are imperative English sentences without a trailing full stop.
+- Every step MUST be written in English. Translate her Chinese; never copy Chinese into "steps".
+- Steps are short imperative English sentences without a trailing full stop, e.g. "Boil the pandan leaves and brown sugar for 15 minutes".
+- Notes she adds at the side or bottom belong in the step they describe; put the steps in the order you would cook them.
 - If the photo is not a recipe, return {"error": "not_a_recipe"}.`;
 
 function corsHeaders(origin) {
@@ -131,29 +137,44 @@ export default {
     const mimeType = /^image\/(jpeg|png|webp)$/.test(body.mimeType || '') ? body.mimeType : 'image/jpeg';
     if (!image || image.length * 0.75 > MAX_IMAGE_BYTES) return reply(origin, 413, { error: 'image_too_large' });
 
-    let response;
-    try {
-      response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
-        body: JSON.stringify({
-          model: env.GEMINI_MODEL || DEFAULT_MODEL,
-          system_instruction: INSTRUCTIONS,
-          input: [
-            { type: 'image', data: image, mime_type: mimeType },
-            { type: 'text', text: 'Read this handwritten recipe and return the JSON.' },
-          ],
-        }),
-      });
-    } catch {
-      return reply(origin, 502, { error: 'reader_unreachable' });
+    const models = [...new Set([env.GEMINI_MODEL, ...FREE_MODELS].filter(Boolean))];
+    let response = null;
+    let limited = false;
+    for (const [index, model] of models.entries()) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), attemptTimeout(index));
+      try {
+        response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+          signal: controller.signal,
+          body: JSON.stringify({
+            model,
+            system_instruction: INSTRUCTIONS,
+            input: [
+              { type: 'image', data: image, mime_type: mimeType },
+              { type: 'text', text: 'Read this handwritten recipe and return the JSON.' },
+            ],
+          }),
+        });
+      } catch {
+        response = null; // timed out or unreachable: try the next model
+        console.log('Gemini attempt failed', model);
+        continue;
+      } finally {
+        clearTimeout(timer);
+      }
+      if (response.ok) break;
+      const detail = (await response.text()).slice(0, 300);
+      console.log('Gemini error', model, response.status, detail);
+      if (response.status === 429) limited = true;
+      /* Busy, limited or unavailable: the next model may still answer. */
+      if (![404, 429, 500, 503, 504].includes(response.status)) break;
+      response = null;
     }
 
-    if (response.status === 429) return reply(origin, 429, { error: 'daily_limit' });
-    if (!response.ok) {
-      console.log('Gemini error', response.status, (await response.text()).slice(0, 500));
-      return reply(origin, 502, { error: 'reader_failed' });
-    }
+    if (!response) return reply(origin, limited ? 429 : 503, { error: limited ? 'daily_limit' : 'busy' });
+    if (!response.ok) return reply(origin, 502, { error: 'reader_failed' });
 
     const raw = extractJson(modelText(await response.json()));
     if (!raw) return reply(origin, 502, { error: 'unreadable_reply' });

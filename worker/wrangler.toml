@@ -1,0 +1,6 @@
+# Cloudflare Worker for "Fill from handwritten note" on Taste of Home.
+# Deploy from this folder with:  npx wrangler deploy
+# The Gemini key is a secret set in the Cloudflare dashboard, never here.
+name = "meijun-recipe-reader"
+main = "recipe-reader.js"
+compatibility_date = "2026-09-01"
