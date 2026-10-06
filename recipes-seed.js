@@ -28,7 +28,7 @@ const SEED_RECIPES = [
       },
       {
         "her": "腊肠两条",
-        "mine": "2 piece of cured sausage"
+        "mine": "2 pieces of cured sausage"
       },
       {
         "her": "粘米粉 500g",
@@ -36,7 +36,7 @@ const SEED_RECIPES = [
       },
       {
         "her": "木薯粉 100g",
-        "mine": "Tapioca flour 100G"
+        "mine": "Tapioca flour 100g"
       },
       {
         "her": "葱头子十立",
@@ -48,7 +48,7 @@ const SEED_RECIPES = [
       },
       {
         "her": "3 茶匙盐",
-        "mine": "3 teaspoon salt"
+        "mine": "3 teaspoons salt"
       },
       {
         "her": "胡椒粉少许",
@@ -61,12 +61,12 @@ const SEED_RECIPES = [
     ],
     "steps": [
       "Soak dried mushrooms in water for an hour to soften it",
-      "Dice all the ingredients into cube (Yam, mushrooms, cured sausage and shrimps)",
-      "Chop and fried shallots in 3 tablespoons of cooking oil",
-      "Set aside the shallots and stir fried the ingredients individually (Yam first, shrimp, mushroom, cured sausage)",
+      "Dice all the ingredients into cubes (Yam, mushrooms, cured sausage and shrimps)",
+      "Chop and fry shallots in 3 tablespoons of cooking oil",
+      "Set aside the shallots and stir-fry the ingredients individually (Yam first, shrimp, mushroom, cured sausage)",
       "In a big bowl, add rice flour, tapioca flour and water to mix well, add salt, pepper, sesame oil",
       "Add all ingredients to the flour/water mixture into big wok",
-      "Cook the mixture in light heat until it congregate",
+      "Cook the mixture over low heat until it thickens",
       "Oil the metal tray",
       "Pour the mixture into metal tray and steam for 45mins"
     ],
@@ -198,7 +198,7 @@ const SEED_RECIPES = [
       }
     ],
     "steps": [
-      "Add  all ingredient (rice flour, eggs, coconut milk, pandan leaf juice, sugar and salt) into a big bowl and mix well",
+      "Add all ingredients (rice flour, eggs, coconut milk, pandan leaf juice, sugar and salt) into a big bowl and mix well",
       "Pour the cooking oil into the wok and dip the iron honeycomb moulds. Turn on the stove to heat up the iron mould",
       "Wait till the oil is hot enough, dip the honeycomb mould into the batter. (Note just dip to the height of the mould, not the entire thing)",
       "Allow the batter to stick to the mould and fry it in hot oil. Shake lightly for the batter to come off the mould",
