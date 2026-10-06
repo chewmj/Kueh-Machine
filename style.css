@@ -1819,8 +1819,8 @@ body.modal-open {
 
 /* ---------- Glossary ---------- */
 
-/* Adding, and what's been decoded, on one pasted-in sheet, taped down and
-   set a touch askew like the recipe cards. */
+/* Adding, and what's been decoded, each on its own taped sheet, set straight
+   so the glossary reads as a working tool beside the tilted recipe cards. */
 .glossary-card {
   --card-pad: 1.5rem;
   /* Edit and delete: the tap area of each, the space between them (none,
@@ -1834,19 +1834,6 @@ body.modal-open {
   background: var(--paper-card);
   border-radius: 2px;
   box-shadow: 0 1px 2px rgba(58, 42, 30, 0.1), 0 8px 18px rgba(58, 42, 30, 0.09);
-  transform: rotate(-0.25deg);
-}
-
-.glossary-card::before {
-  content: '';
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%) rotate(-2deg);
-  width: 70px;
-  height: 22px;
-  background: var(--tape);
-  opacity: 0.85;
 }
 
 /* Each half of the sheet gets a handwritten label, in the same hand and red
@@ -1861,10 +1848,22 @@ body.modal-open {
   color: var(--accent);
 }
 
-/* A solid rule between the halves, heavier than the dashed lines between
-   rows, so it reads as two sections rather than one more row. */
-.glossary-subhead-split {
-  border-top: 1px solid var(--line);
+/* Taped down at the top centre like the recipe cards, but kept straight. */
+.glossary-card::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 70px;
+  height: 22px;
+  background: var(--tape);
+  opacity: 0.85;
+}
+
+/* The same space as between recipe cards (2rem, 1.5rem on phones). */
+.glossary-card-list {
+  margin-top: 2rem;
 }
 
 /* Search sits at the head of the list, ruled off from it. */
@@ -1887,7 +1886,9 @@ body.modal-open {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.85rem;
+  /* Space around the arrow, but a closer line below when the meaning
+     wraps under her words. */
+  gap: 0.3rem 0.85rem;
   padding: 0.9rem var(--card-pad);
   /* Room for the two buttons pinned in the corner. */
   padding-right: calc(var(--card-pad) + 2 * var(--icon-btn) + var(--icon-gap));
@@ -1948,7 +1949,13 @@ body.modal-open {
   font-size: 0.85rem;
 }
 
-/* Regular weight: the colour alone marks it as the translation. */
+/* A touch heavier than body text (500) on both halves, so the phrases stand
+   out from the ruled sheet; the colour still marks the translation. */
+.glossary-list .term,
+.glossary-list .meaning {
+  font-weight: 500;
+}
+
 .meaning {
   color: var(--accent);
   margin-right: auto;
@@ -2125,9 +2132,25 @@ body.modal-open {
   border-color: var(--accent-soft);
 }
 
-.glossary-add .mini-btn {
+/* A missing half: terracotta edge and a faint wash, and a line under the
+   row saying what's needed. */
+.glossary-add input[aria-invalid="true"] {
+  border-color: var(--accent);
+  background: rgba(183, 71, 42, 0.05);
+}
+
+.glossary-add-error {
+  flex-basis: 100%;
+  margin: -0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+/* The same filled button as "+ Add a recipe", sized to the fields beside it. */
+.glossary-add .primary-btn {
   flex: 0 0 auto;
-  padding: 0.4rem 1rem;
+  align-self: stretch;
+  padding: 0.5rem 1.2rem;
 }
 
 /* Matches while searching, tucked into the right end of the search field. */
@@ -2417,6 +2440,10 @@ body.modal-open {
     transform: none;
   }
 
+  .glossary-card-list {
+    margin-top: 1.5rem;
+  }
+
   .glossary-add .arrow {
     display: none;
   }
@@ -2428,10 +2455,9 @@ body.modal-open {
 
   /* Stretched to full width, the label needs centring or it sits off to
      the left of the pill. */
-  .glossary-add .mini-btn {
+  .glossary-add .primary-btn {
     width: 100%;
-    justify-content: center;
-    padding: 0.6rem 1rem;
+    padding: 0.7rem 1rem;
   }
 
   .glossary-list li {

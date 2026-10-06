@@ -7,8 +7,8 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='5' fill='%23f3e8d6'/><text x='16' y='24' font-size='22' text-anchor='middle' font-family='serif' fill='%23b7472a'>家</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=202610061900">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css?v=202610062200">
 </head>
 <body>
 
@@ -121,17 +121,21 @@
       <h2>The Glossary <span class="cn">度量对照</span></h2>
       <p class="section-note">A running translation of the <span class="latin-quote">“</span><em>agak-agak</em><span class="latin-quote">”</span> (rough, by-feel) measurements Mum seems to speak fluently, decoded one phrase at a time.</p>
 
-      <!-- Adding, and what's been decoded so far, on one pasted-in sheet. -->
-      <div class="glossary-card">
+      <!-- Two pasted-in notes: one for adding a phrase, one for what's been
+           decoded so far. -->
+      <div class="glossary-card glossary-card-add">
         <h3 class="glossary-subhead" id="glossary-add-title">Add a new phrase</h3>
         <div class="glossary-add" role="group" aria-labelledby="glossary-add-title">
-          <input type="text" id="glossary-term" placeholder="What Mum says: e.g. 一点点" aria-label="Her phrase">
+          <input type="text" id="glossary-term" placeholder="What Mum says: e.g. 一点点" aria-label="Her phrase" aria-describedby="glossary-add-error">
           <span class="arrow" aria-hidden="true">→</span>
-          <input type="text" id="glossary-meaning" placeholder="What it really means: ~½ tbsp" aria-label="Real measurement">
-          <button type="button" id="glossary-submit" class="mini-btn" aria-label="Add to glossary">+ Add</button>
+          <input type="text" id="glossary-meaning" placeholder="What it really means: ~½ tbsp" aria-label="Real measurement" aria-describedby="glossary-add-error">
+          <button type="button" id="glossary-submit" class="primary-btn" aria-label="Add to glossary">+ Add</button>
+          <p class="glossary-add-error" id="glossary-add-error" role="alert" hidden></p>
         </div>
+      </div>
 
-        <h3 class="glossary-subhead glossary-subhead-split">What I have decoded so far</h3>
+      <div class="glossary-card glossary-card-list">
+        <h3 class="glossary-subhead">What I have decoded so far</h3>
         <div class="glossary-search-row">
           <div class="glossary-search-field">
             <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8L20 20"/></svg>
@@ -212,7 +216,7 @@
   <!-- Universal Kueh Machine account. Mei Jun's editable recipes and media
        intentionally remain browser-local, as described by the backup UI. -->
   <script src="/shared/account-widget.js" data-accent-color="#b7472a"></script>
-  <script src="./recipes-seed.js?v=202610061900"></script>
-  <script src="./script.js?v=202610061900"></script>
+  <script src="./recipes-seed.js?v=202610062200"></script>
+  <script src="./script.js?v=202610062200"></script>
 </body>
 </html>

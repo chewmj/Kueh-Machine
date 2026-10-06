@@ -485,7 +485,44 @@ async function saveEditedTerm(li) {
   showToast('Glossary updated');
 }
 
+/* Clicking "+ Add" with a half missing: mark the empty field(s), say what's
+   needed, and put the cursor where to start. Typing clears it. */
+function showGlossaryAddError(termMissing, meaningMissing, { moveFocus = true } = {}) {
+  const term = document.getElementById('glossary-term');
+  const meaning = document.getElementById('glossary-meaning');
+  const error = document.getElementById('glossary-add-error');
+  term.setAttribute('aria-invalid', String(termMissing));
+  meaning.setAttribute('aria-invalid', String(meaningMissing));
+  error.textContent = termMissing && meaningMissing
+    ? 'Write what Mum says and what it really means, then add it.'
+    : termMissing
+      ? 'Add what Mum says too, e.g. 一点点.'
+      : 'Add what it really means too, e.g. ~½ tbsp.';
+  error.hidden = false;
+  if (moveFocus) (termMissing ? term : meaning).focus();
+}
+
+function clearGlossaryAddError() {
+  document.getElementById('glossary-term').removeAttribute('aria-invalid');
+  document.getElementById('glossary-meaning').removeAttribute('aria-invalid');
+  const error = document.getElementById('glossary-add-error');
+  error.hidden = true;
+  error.textContent = '';
+}
+
 function setupGlossary() {
+  ['glossary-term', 'glossary-meaning'].forEach((id) => {
+    document.getElementById(id).addEventListener('input', (e) => {
+      const error = document.getElementById('glossary-add-error');
+      if (error.hidden) return;
+      /* Narrow the message to whatever is still missing, or clear it. */
+      const termMissing = !document.getElementById('glossary-term').value.trim();
+      const meaningMissing = !document.getElementById('glossary-meaning').value.trim();
+      if (termMissing || meaningMissing) showGlossaryAddError(termMissing, meaningMissing, { moveFocus: false });
+      else clearGlossaryAddError();
+    });
+  });
+
   document.getElementById('glossary-search').addEventListener('input', (e) => {
     renderGlossary(e.target.value);
   });
@@ -503,7 +540,11 @@ function setupGlossary() {
     const meaningInput = document.getElementById('glossary-meaning');
     const term = termInput.value.trim();
     const meaning = meaningInput.value.trim();
-    if (!term || !meaning) return;
+    if (!term || !meaning) {
+      showGlossaryAddError(!term, !meaning);
+      return;
+    }
+    clearGlossaryAddError();
 
     const existing = await dbGetAll('glossary');
     const match = existing.find((entry) => entry.term.trim().toLowerCase() === term.toLowerCase());
