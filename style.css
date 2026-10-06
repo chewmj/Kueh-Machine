@@ -450,8 +450,8 @@ body.modal-open {
 
 /* Ingredients, steps and media each start below a hairline. */
 .recipe-form .form-block {
-  margin-top: 1.6rem;
-  padding-top: 1.3rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
   border-top: 1px solid var(--line);
 }
 
