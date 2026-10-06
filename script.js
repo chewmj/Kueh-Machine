@@ -1211,7 +1211,7 @@ const SITE_URL = 'https://www.kuehmachine.com/meijun/';
 function shareMessage(recipe) {
   const dish = [recipe.nameEn, recipe.nameCn].filter(Boolean).join(' ');
   /* *…* is WhatsApp's bold; other apps show the asterisks as they are. */
-  return `Sharing the *${dish}* recipe from 家常菜 · Taste of Home.\nFor more recipes: kuehmachine.com/meijun`;
+  return `Sharing the *${dish}* recipe from 家常菜 · Taste of Home. For more recipes: kuehmachine.com/meijun`;
 }
 
 /* ---------- Recipe card image (for sharing) ---------- */
