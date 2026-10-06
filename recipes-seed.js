@@ -370,31 +370,36 @@ const SEED_RECIPES = [
     "story": "During 冬至, winter solstice or 元宵节, during the Chinese New Year period, my mum will always make tang yuan for the family to signify 一家团圆, family reunion.",
     "ingredients": [
       {
-        "her": "糯米粉",
-        "mine": "Glutinous rice flour"
+        "her": "糯米粉 300gm",
+        "mine": "Glutinous rice flour 300g"
       },
       {
-        "her": "开水",
-        "mine": "Water"
+        "her": "水 1,000gm",
+        "mine": "Water 1,000ml (for the sweet soup)"
       },
       {
-        "her": "红色素",
-        "mine": "Red colouring"
+        "her": "煮汤圆水 600gm",
+        "mine": "Water 600ml (for boiling the tang yuan)"
       },
       {
-        "her": "斑斓叶",
-        "mine": "Pandan leaves"
+        "her": "黄糖七汤匙",
+        "mine": "Brown sugar 7 tbsp"
       },
       {
-        "her": "红糖",
-        "mine": "Red sugar"
+        "her": "色素红色 1/4茶匙",
+        "mine": "Red food colouring 1/4 tsp"
+      },
+      {
+        "her": "班兰叶 1棵",
+        "mine": "Pandan leaves, 1 bunch"
       }
     ],
     "steps": [
-      "Mix water with glutinous rice flour and knead into dough (Add red colouring if required)",
-      "Divide the dough into smaller pieces and roll them into balls",
-      "Boil pandan leaves in water for 10mins, and add the Glutinous rice balls in",
-      "Add red sugar to the soup as required"
+      "Add 200ml water to the glutinous rice flour and knead into a dough. Add a little more water if it is too dry. For pink tang yuan, knead the red colouring into some of the dough",
+      "Roll the dough into small balls",
+      "In a small pot, boil 1,000ml water with the pandan leaves and brown sugar for 15 minutes. Add more sugar if it is not sweet enough",
+      "In another pot, bring 600ml water to the boil, then add the tang yuan. They are cooked when they float",
+      "Scoop the tang yuan out into the brown sugar soup, and it is ready"
     ],
     "order": 3,
     "createdAt": 1785214724657,
