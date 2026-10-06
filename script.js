@@ -33,10 +33,41 @@ function openDB() {
         db.createObjectStore('thumbs', { keyPath: 'id' });
       }
     };
-    request.onsuccess = () => resolve(request.result);
+    /* Another tab still running an older version can hold the database in
+       its old shape, and the browser makes this page wait, with no limit,
+       for that tab to let go. Give it a few seconds, then carry on from
+       memory so the recipes show regardless. */
+    let settled = false;
+    const settle = (db) => {
+      if (settled) return;
+      settled = true;
+      resolve(db);
+    };
+    request.onblocked = () => {
+      setTimeout(() => {
+        if (settled) return;
+        console.warn('Saved recipes are held by another tab running an older version; showing the built-in recipes for now.');
+        showToast('This page is open in another tab with an older version. Close that tab and refresh to see your saved recipes.');
+        settle(null);
+      }, 3000);
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      /* Opened only after we gave up waiting: leave it for next time. */
+      if (settled) {
+        db.close();
+        return;
+      }
+      /* And never be that blocking tab ourselves: let a newer version in. */
+      db.onversionchange = () => {
+        db.close();
+        showToast('A newer version of this page was opened. Refresh to keep working here.');
+      };
+      settle(db);
+    };
     request.onerror = () => {
       console.warn('IndexedDB unavailable, keeping recipes in memory:', request.error);
-      resolve(null);
+      settle(null);
     };
   });
   return dbPromise;
@@ -2034,7 +2065,9 @@ async function renderRecipes() {
       const card = await buildRecipeCard(recipe, index, recipes.length);
       if (index === 0) clearPlaceholders();
       grid.appendChild(card);
-      if (index < recipes.length - 1) await new Promise(requestAnimationFrame);
+      /* A plain timer rather than an animation frame: browsers pause frames
+         in background tabs, which held back every card after the first. */
+      if (index < recipes.length - 1) await new Promise((resolve) => setTimeout(resolve, 0));
     }
     if (!recipes.length) clearPlaceholders();
     /* Draw the share cards once the page is up, one at a time. */
@@ -2579,20 +2612,34 @@ async function init() {
   } catch (err) {
     console.warn('Could not check the built-in recipes:', err);
   }
-  setupGlossary();
-  renderGlossary();
-
-  setupRecipeForm();
-  const story = document.getElementById('field-story');
-  attachQuietScrollbar(story, story.parentElement);
-  setupReordering();
-  setupRecipeCardActions();
-  setupRecipeDragging();
-  setupRecipeDetail();
-  setupMediaViewer();
-  setupVoiceInput();
-  setupBackup();
-  setupSharePanel();
+  /* Each feature starts on its own, so a fault in one (voice input on an
+     unusual browser, say) can't stop the recipe cards from appearing. */
+  const start = (name, fn) => {
+    try {
+      fn();
+    } catch (err) {
+      console.error(`Could not start ${name}:`, err);
+    }
+  };
+  start('the glossary', () => {
+    setupGlossary();
+    renderGlossary();
+  });
+  start('the recipe form', () => {
+    setupRecipeForm();
+    const story = document.getElementById('field-story');
+    attachQuietScrollbar(story, story.parentElement);
+    setupReordering();
+  });
+  start('the recipe cards', () => {
+    setupRecipeCardActions();
+    setupRecipeDragging();
+    setupRecipeDetail();
+  });
+  start('the photo viewer', setupMediaViewer);
+  start('voice input', setupVoiceInput);
+  start('backup', setupBackup);
+  start('sharing', setupSharePanel);
   await renderRecipes();
   openRecipeFromHash();
   window.addEventListener('hashchange', openRecipeFromHash);
