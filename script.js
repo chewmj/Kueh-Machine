@@ -1918,16 +1918,20 @@ async function mediaTag(item, alt, { playable = false } = {}) {
       return `<video src="${mediaSrc(item)}" controls playsinline preload="metadata"></video>`;
     }
 
-    const frame = await thumbBlobFor(item);
-    const still = frame ? mediaUrl(frame) : item.poster;
+    /* Built-in videos ship with a poster; don't download and decode the
+       whole video just to make a card-sized still. (From Leonard.) */
+    const frame = item.poster ? null : await thumbBlobFor(item);
+    const still = item.poster || (frame ? mediaUrl(frame) : null);
     const inner = still
       ? `<img src="${still}" alt="${alt}" loading="lazy" decoding="async">`
       : `<video src="${mediaSrc(item)}" muted playsinline preload="metadata"></video>`;
     return `<span class="thumb-wrap">${inner}<span class="play-badge">▶</span></span>`;
   }
 
-  const thumb = await thumbBlobFor(item);
-  const url = thumb ? mediaUrl(thumb) : item.src;
+  /* Built-in photos ship with a small thumbnail made by build-seed.py;
+     only photos added in the browser need one made here. */
+  const thumb = item.thumb ? null : await thumbBlobFor(item);
+  const url = item.thumb || (thumb ? mediaUrl(thumb) : item.src);
   return `<img src="${url}" alt="${alt}" loading="lazy" decoding="async">`;
 }
 
@@ -1951,19 +1955,41 @@ async function renderRecipes() {
   const grid = document.getElementById('recipe-grid');
   const savedCards = grid.querySelectorAll('.recipe-card[data-id]');
   savedCards.forEach((card) => card.remove());
+  grid.querySelectorAll('.recipe-loading-error').forEach((item) => item.remove());
+  grid.setAttribute('aria-busy', 'true');
   cardObjectUrls.forEach((url) => URL.revokeObjectURL(url));
   cardObjectUrls = [];
+  const clearPlaceholders = () => grid.querySelectorAll('.recipe-loading').forEach((item) => item.remove());
 
-  let recipes = await dbGetAll('recipes');
-  recipes = await ensureRecipeOrder(recipes);
-  recipes.sort((a, b) => a.order - b.order);
-  recipeCache.clear();
-  recipes.forEach((r) => recipeCache.set(r.id, r));
+  try {
+    let recipes = await dbGetAll('recipes');
+    recipes = await ensureRecipeOrder(recipes);
+    recipes.sort((a, b) => a.order - b.order);
+    recipeCache.clear();
+    recipes.forEach((r) => recipeCache.set(r.id, r));
 
-  const built = await Promise.all(recipes.map((recipe, index) => buildRecipeCard(recipe, index, recipes.length)));
-  built.forEach((card) => grid.appendChild(card));
-  /* Draw the share cards once the page is up, one at a time. */
-  setTimeout(() => prepareRecipeCards(recipes), 500);
+    /* Each card appears as soon as it's ready, rather than all of them
+       waiting for the slowest. (From Leonard.) */
+    for (const [index, recipe] of recipes.entries()) {
+      const card = await buildRecipeCard(recipe, index, recipes.length);
+      if (index === 0) clearPlaceholders();
+      grid.appendChild(card);
+      if (index < recipes.length - 1) await new Promise(requestAnimationFrame);
+    }
+    if (!recipes.length) clearPlaceholders();
+    /* Draw the share cards once the page is up, one at a time. */
+    setTimeout(() => prepareRecipeCards(recipes), 500);
+  } catch (error) {
+    console.error('Could not render recipe cards:', error);
+    clearPlaceholders();
+    const message = document.createElement('p');
+    message.className = 'recipe-loading-error';
+    message.setAttribute('role', 'alert');
+    message.textContent = 'The recipe cards could not be opened. Refresh the page to try again.';
+    grid.appendChild(message);
+  } finally {
+    grid.setAttribute('aria-busy', 'false');
+  }
 }
 
 async function buildRecipeCard(recipe, index, total) {
@@ -2450,7 +2476,10 @@ async function init() {
   await renderRecipes();
   openRecipeFromHash();
   window.addEventListener('hashchange', openRecipeFromHash);
-  fetchSeedMediaInBackground().catch((err) => console.warn('Background media fetch stopped:', err));
+  /* Once the browser is idle, so it never competes with the page loading. */
+  const cacheMedia = () => fetchSeedMediaInBackground().catch((err) => console.warn('Background media fetch stopped:', err));
+  if ('requestIdleCallback' in window) requestIdleCallback(cacheMedia, { timeout: 3000 });
+  else setTimeout(cacheMedia, 1000);
 }
 
 document.addEventListener('DOMContentLoaded', init);

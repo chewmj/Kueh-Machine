@@ -24,6 +24,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MEDIA_DIR = os.path.join(ROOT, 'media')
+THUMB_DIR = os.path.join(MEDIA_DIR, 'thumbs')
 SEED_FILE = os.path.join(ROOT, 'recipes-seed.js')
 INDEX_FILE = os.path.join(ROOT, 'index.html')
 
@@ -75,6 +76,19 @@ def to_h264(video_path):
     os.remove(video_path)
     os.rename(tmp_path, out_path)
     return out_path
+
+
+def make_thumb(image_name):
+    """A 480px JPEG for the recipe cards, so they never load a full photo.
+    Returns its path relative to the project, as the seed stores it."""
+    os.makedirs(THUMB_DIR, exist_ok=True)
+    try:
+        subprocess.run(['sips', '-Z', '480', '-s', 'format', 'jpeg', '-s', 'formatOptions', '72',
+                        os.path.join(MEDIA_DIR, image_name), '--out', os.path.join(THUMB_DIR, image_name)],
+                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return f'./media/thumbs/{image_name}'
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
 
 
 def fits_already(path, limit=1600):
@@ -200,8 +214,11 @@ def main():
                 )
                 os.remove(raw_path)
 
+            thumb = make_thumb(final_name) if final_name.endswith('.jpg') else None
+
             media_out.append({
                 **({'poster': f'./media/{poster}'} if poster else {}),
+                **({'thumb': thumb} if thumb else {}),
                 'id': f'{name}-{index}',
                 'type': item.get('type', 'image'),
                 # What it was called in the browser, not what the file is called.
@@ -248,7 +265,9 @@ const SEED_RECIPES = """
 
     total_media = sum(len(r['media']) for r in out)
     size_mb = sum(
-        os.path.getsize(os.path.join(MEDIA_DIR, n)) for n in os.listdir(MEDIA_DIR)
+        os.path.getsize(os.path.join(folder, filename))
+        for folder, _, filenames in os.walk(MEDIA_DIR)
+        for filename in filenames
     ) / 1024 / 1024
 
     print(f'{len(out)} recipes, {len(glossary)} glossary entries, {total_media} media files ({size_mb:.1f} MB)')
