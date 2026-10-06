@@ -642,15 +642,19 @@ function addIngredientRow(her = '', mine = '') {
   row.innerHTML = `
     <button type="button" class="drag-handle" aria-label="Drag to reorder, or use the arrow keys">⠿</button>
     <span class="field-with-mic">
-      <input type="text" class="ing-her" placeholder="Her words (e.g. 一把姜)" value="${her}">
+      <input type="text" class="ing-her" placeholder="Her words (e.g. 一把姜)">
       <button type="button" class="mic-btn" data-lang="zh-CN" aria-label="Record her words with voice">${ICON.mic}</button>
     </span>
     <span class="field-with-mic">
-      <input type="text" class="ing-mine" placeholder="Your translation (e.g. ~30g)" value="${mine}">
+      <input type="text" class="ing-mine" placeholder="Your translation (e.g. ~30g)">
       <button type="button" class="mic-btn" data-lang="en-SG" aria-label="Record your translation with voice">${ICON.mic}</button>
     </span>
     <button type="button" class="remove-row" aria-label="Remove">${ICON.trash}</button>
   `;
+  /* Set as properties, not in the HTML, so quotes in any text (typed, or
+     read from a handwritten note) can't break the row. */
+  row.querySelector('.ing-her').value = her;
+  row.querySelector('.ing-mine').value = mine;
   container.appendChild(row);
 }
 
@@ -661,11 +665,12 @@ function addStepRow(text = '') {
   row.innerHTML = `
     <button type="button" class="drag-handle" aria-label="Drag to reorder, or use the arrow keys">⠿</button>
     <span class="field-with-mic">
-      <input type="text" class="step-text" placeholder="Step description" value="${text}">
+      <input type="text" class="step-text" placeholder="Step description">
       <button type="button" class="mic-btn" data-lang="en-SG" aria-label="Record this step with voice">${ICON.mic}</button>
     </span>
     <button type="button" class="remove-row" aria-label="Remove">${ICON.trash}</button>
   `;
+  row.querySelector('.step-text').value = text;
   container.appendChild(row);
 }
 
@@ -747,6 +752,8 @@ function renderExistingMediaPreview() {
 
 function fillFormForEdit(recipe) {
   editingRecipe = recipe;
+  const noteStatus = document.getElementById('note-fill-status');
+  if (noteStatus) noteStatus.textContent = noteStatus.dataset.start || (noteStatus.dataset.start = noteStatus.textContent);
   currentMedia = recipe && recipe.media
     ? recipe.media.map((m) => ({ ...m, id: m.id || makeId(), description: m.description || '' }))
     : [];
@@ -2249,6 +2256,8 @@ const ICON = {
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10-10a2.1 2.1 0 10-3-3L5 17v3z"/><path d="M14.5 6.5l3 3"/></svg>',
   download:
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M8 11.5l4 4 4-4"/><path d="M5 19.5h14"/></svg>',
+  camera:
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 015.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0120 8.5v9a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 17.5z"/><circle cx="12" cy="13" r="3.5"/></svg>',
   trash:
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M10 4h4a1 1 0 011 1v2H9V5a1 1 0 011-1z"/><path d="M6 7l1 12.5a1.5 1.5 0 001.5 1.4h7a1.5 1.5 0 001.5-1.4L18 7"/><path d="M10.5 11v6M13.5 11v6"/></svg>',
 };
@@ -2630,6 +2639,139 @@ function setupVoiceInput() {
   }
 }
 
+/* ---------- Fill from a handwritten note ---------- */
+
+/* The reader Worker (worker/recipe-reader.js) on Mei Jun's own Cloudflare
+   account. Empty keeps the button hidden. */
+const RECIPE_READER_URL = '';
+const NOTE_PHOTO_MAX = 1600;
+
+const NOTE_ERRORS = {
+  daily_limit: 'The free reading allowance is used up for today. Try again tomorrow, or type this one in.',
+  too_many_requests: 'That was a lot of notes in a minute. Wait a moment and try again.',
+  image_too_large: 'That photo is too large to send. Try a smaller one.',
+  not_a_recipe: "That photo doesn't look like a recipe. Try a clearer photo of the note.",
+  nothing_found: "Couldn't find any ingredients or steps in that photo. Try a clearer, closer photo.",
+  timeout: 'Reading the note took too long. Check your connection and try again.',
+};
+
+function setNoteStatus(message, unsure = []) {
+  const status = document.getElementById('note-fill-status');
+  status.replaceChildren(message);
+  if (unsure.length) {
+    const list = document.createElement('span');
+    list.className = 'note-fill-unsure';
+    list.textContent = `Couldn't read for sure: ${unsure.join('; ')}.`;
+    status.append(' ', list);
+  }
+}
+
+/* Photos are shrunk before sending: quicker, and well within the reader's
+   limits, while still sharp enough for handwriting. */
+async function notePhotoAsJpeg(file) {
+  let source;
+  try {
+    source = await createImageBitmap(file);
+  } catch {
+    source = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+  const scale = Math.min(1, NOTE_PHOTO_MAX / Math.max(source.width, source.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(source.width * scale);
+  canvas.height = Math.round(source.height * scale);
+  canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
+  if (source.close) source.close();
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.86));
+}
+
+function formHasContent() {
+  const filled = (selector) => [...document.querySelectorAll(selector)].some((el) => el.value.trim());
+  return filled('#field-name-en, #field-name-cn, .ing-her, .ing-mine, .step-text');
+}
+
+function fillFormFromNote(recipe) {
+  if (recipe.nameEn) document.getElementById('field-name-en').value = recipe.nameEn;
+  if (recipe.nameCn) document.getElementById('field-name-cn').value = recipe.nameCn;
+  document.getElementById('ingredient-rows').innerHTML = '';
+  recipe.ingredients.forEach((i) => addIngredientRow(i.her, i.mine));
+  if (!recipe.ingredients.length) addIngredientRow();
+  document.getElementById('step-rows').innerHTML = '';
+  recipe.steps.forEach((step) => addStepRow(step));
+  if (!recipe.steps.length) addStepRow();
+}
+
+async function readHandwrittenNote(file) {
+  const button = document.getElementById('fill-from-note');
+  button.disabled = true;
+  setNoteStatus("Reading Mum's handwriting… this takes a few seconds.");
+
+  try {
+    const photo = await notePhotoAsJpeg(file);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 60000);
+    let response;
+    try {
+      response = await fetch(RECIPE_READER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: (await blobToDataURL(photo)).split(',')[1], mimeType: 'image/jpeg' }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || result.error) {
+      setNoteStatus(NOTE_ERRORS[result.error] || "Couldn't read the note right now. Try again in a moment, or type it in.");
+      return;
+    }
+
+    if (formHasContent()) {
+      const ok = await askConfirm({
+        title: 'Replace what’s in the form?',
+        body: 'The names, ingredients and steps from the note will replace what’s there now. The story and photos stay.',
+        confirmLabel: 'Replace',
+        cancelLabel: 'Keep mine',
+      });
+      if (!ok) {
+        setNoteStatus('Kept what you had. The note was read but not used.');
+        return;
+      }
+    }
+
+    fillFormFromNote(result);
+    /* The note itself joins the recipe's photos. */
+    currentMedia.push({ id: makeId(), type: 'image', blob: photo, name: 'Handwritten recipe', description: '' });
+    renderExistingMediaPreview();
+    setNoteStatus('Filled in from the note. Check it over and edit anything before saving.', result.unsure || []);
+  } catch (err) {
+    console.warn('Could not read the note:', err);
+    setNoteStatus(err.name === 'AbortError' ? NOTE_ERRORS.timeout : "Couldn't read the note right now. Try again in a moment, or type it in.");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function setupNoteFill() {
+  if (!RECIPE_READER_URL) return;
+  const box = document.getElementById('note-fill');
+  const button = document.getElementById('fill-from-note');
+  const input = document.getElementById('note-fill-file');
+  button.innerHTML = `${ICON.camera}<span>Fill from handwritten note</span>`;
+  box.hidden = false;
+  button.addEventListener('click', () => input.click());
+  input.addEventListener('change', () => {
+    const file = input.files[0];
+    input.value = '';
+    if (file) readHandwrittenNote(file);
+  });
+}
+
 /* ---------- Init ---------- */
 
 async function init() {
@@ -2665,6 +2807,7 @@ async function init() {
     setupRecipeDetail();
   });
   start('the photo viewer', setupMediaViewer);
+  start('filling from a note', setupNoteFill);
   start('voice input', setupVoiceInput);
   start('backup', setupBackup);
   start('sharing', setupSharePanel);

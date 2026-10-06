@@ -356,6 +356,40 @@ body.modal-open {
   cursor: pointer;
 }
 
+/* "Fill from handwritten note": a dashed slip at the top of the form. */
+.note-fill {
+  margin: 0.75rem 0 0.25rem;
+  padding: 0.9rem 1rem;
+  border: 1px dashed var(--line);
+  border-radius: 3px;
+  background: var(--paper);
+}
+
+.note-fill .mini-btn svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.note-fill .mini-btn[disabled] {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.recipe-form .note-fill-status {
+  margin: 0.55rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.note-fill-unsure {
+  color: var(--accent);
+}
+
 .form-block {
   margin-top: 1.3rem;
 }
