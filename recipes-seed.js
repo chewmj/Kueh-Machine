@@ -157,7 +157,7 @@ const SEED_RECIPES = [
         "id": "orh-kueh-yam-cake-11",
         "type": "audio",
         "name": "芋头糕/Yam cake recipe",
-        "description": "In Mum's voice",
+        "description": "",
         "src": "./media/orh-kueh-yam-cake-11.m4a"
       }
     ]
@@ -259,7 +259,7 @@ const SEED_RECIPES = [
         "id": "fried-honeycomb-7",
         "type": "audio",
         "name": "炸蜂窝 Fried honeycomb recipe",
-        "description": "In Mum's voice",
+        "description": "",
         "src": "./media/fried-honeycomb-7.m4a"
       }
     ]
@@ -358,7 +358,7 @@ const SEED_RECIPES = [
         "id": "hainanese-yi-bua-kueh-co-4",
         "type": "audio",
         "name": "薏粑 Yi bua recipe",
-        "description": "In Mum's voice",
+        "description": "",
         "src": "./media/hainanese-yi-bua-kueh-co-4.m4a"
       }
     ]
@@ -443,7 +443,7 @@ const SEED_RECIPES = [
         "id": "tang-yuan-glutinous-rice-6",
         "type": "audio",
         "name": "汤圆 Tang Yuan recipe",
-        "description": "In Mum's voice",
+        "description": "",
         "src": "./media/tang-yuan-glutinous-rice-6.m4a"
       },
       {
