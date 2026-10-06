@@ -308,7 +308,7 @@ body.modal-open {
   display: block;
   font-size: 0.9rem;
   color: var(--ink-soft);
-  margin-top: 1.1rem;
+  margin-top: 0.85rem;
 }
 
 /* Only the wrappers that follow a label need the gap; the ones inside
@@ -362,7 +362,7 @@ body.modal-open {
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  margin-top: 1.1rem;
+  margin-top: 0.9rem;
   padding: 0.7rem 0.9rem;
   border: 1px solid var(--line);
   border-radius: 3px;
@@ -421,7 +421,7 @@ body.modal-open {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin: 1.25rem 0 0;
+  margin: 1rem 0 0;
   font-size: 0.8rem;
   color: var(--ink-soft);
 }
@@ -446,8 +446,8 @@ body.modal-open {
 
 /* Ingredients, steps and media each start below a hairline. */
 .recipe-form .form-block {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
+  margin-top: 1.05rem;
+  padding-top: 0.85rem;
   border-top: 1px solid var(--line);
 }
 
@@ -490,7 +490,7 @@ body.modal-open {
 
 /* "+ Add ingredient" and "+ Add step": quiet text buttons under the rows. */
 .text-btn {
-  margin: 0.65rem 0 0 1.5rem;
+  margin: 0.45rem 0 0 1.5rem;
   padding: 0.2rem 0;
   background: none;
   border: none;
@@ -521,8 +521,8 @@ body.modal-open {
   align-items: center;
   gap: 0.2rem;
   width: 100%;
-  margin-top: 0.6rem;
-  padding: 1.1rem 1rem;
+  margin-top: 0.5rem;
+  padding: 0.85rem 1rem;
   border: 1px dashed var(--accent-soft);
   border-radius: 3px;
   background: var(--paper);
@@ -561,7 +561,7 @@ body.modal-open {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  margin-top: 0.5rem;
+  margin-top: 0.4rem;
 }
 
 .ingredient-row-input input,
@@ -698,7 +698,7 @@ body.modal-open {
   /* The overlay's 3rem padding would otherwise hold it above the bottom. */
   bottom: -3rem;
   z-index: 2;
-  margin: 1.5rem -2rem -2.25rem;
+  margin: 1.2rem -2rem -2.25rem;
   padding: 0.9rem 2rem calc(0.9rem + env(safe-area-inset-bottom, 0px));
   text-align: right;
   background: var(--paper-card);
@@ -2510,7 +2510,7 @@ body.modal-open {
 
   .form-actions {
     bottom: 0;
-    margin: 1.5rem -1.25rem -1.5rem;
+    margin: 1.2rem -1.25rem -1.5rem;
     padding-left: 1.25rem;
     padding-right: 1.25rem;
   }
@@ -2557,8 +2557,8 @@ body.modal-open {
      ingredient ends and the next begins. */
   .ingredient-row-input + .ingredient-row-input {
     border-top: 1px dashed var(--line);
-    padding-top: 0.7rem;
-    margin-top: 0.7rem;
+    padding-top: 0.55rem;
+    margin-top: 0.55rem;
   }
 
   .step-row-input {
