@@ -641,12 +641,13 @@ function addIngredientRow(her = '', mine = '') {
   row.className = 'ingredient-row-input';
   row.innerHTML = `
     <button type="button" class="drag-handle" aria-label="Drag to reorder, or use the arrow keys">⠿</button>
-    <span class="field-with-mic">
-      <input type="text" class="ing-her" placeholder="Her words (e.g. 一把姜)">
+    <span class="field-with-mic field-her">
+      <input type="text" class="ing-her" placeholder="e.g. 一把姜" aria-label="Her words">
       <button type="button" class="mic-btn" data-lang="zh-CN" aria-label="Record her words with voice">${ICON.mic}</button>
     </span>
-    <span class="field-with-mic">
-      <input type="text" class="ing-mine" placeholder="Your translation (e.g. ~30g)">
+    <span class="ing-arrow" aria-hidden="true">→</span>
+    <span class="field-with-mic field-mine">
+      <input type="text" class="ing-mine" placeholder="e.g. ~30g" aria-label="Your translation">
       <button type="button" class="mic-btn" data-lang="en-SG" aria-label="Record your translation with voice">${ICON.mic}</button>
     </span>
     <button type="button" class="remove-row" aria-label="Remove">${ICON.trash}</button>
@@ -664,8 +665,9 @@ function addStepRow(text = '') {
   row.className = 'step-row-input';
   row.innerHTML = `
     <button type="button" class="drag-handle" aria-label="Drag to reorder, or use the arrow keys">⠿</button>
+    <span class="step-num" aria-hidden="true"></span>
     <span class="field-with-mic">
-      <input type="text" class="step-text" placeholder="Step description">
+      <input type="text" class="step-text" placeholder="Step description" aria-label="Step">
       <button type="button" class="mic-btn" data-lang="en-SG" aria-label="Record this step with voice">${ICON.mic}</button>
     </span>
     <button type="button" class="remove-row" aria-label="Remove">${ICON.trash}</button>
@@ -2763,8 +2765,9 @@ function setupNoteFill() {
   const box = document.getElementById('note-fill');
   const button = document.getElementById('fill-from-note');
   const input = document.getElementById('note-fill-file');
-  button.innerHTML = `${ICON.camera}<span>Fill from handwritten note</span>`;
+  box.querySelector('.note-fill-icon').innerHTML = ICON.camera;
   box.hidden = false;
+  document.getElementById('form-or').hidden = false;
   button.addEventListener('click', () => input.click());
   input.addEventListener('change', () => {
     const file = input.files[0];

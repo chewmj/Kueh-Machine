@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=202610071400">
+  <link rel="stylesheet" href="./style.css?v=202610071630">
 </head>
 <body>
 
@@ -68,23 +68,30 @@
         <!-- Fill the form from a photo of a handwritten recipe. Hidden until
              RECIPE_READER_URL in script.js points at the reader Worker. -->
         <div class="note-fill" id="note-fill" hidden>
-          <button type="button" id="fill-from-note" class="mini-btn"></button>
-          <p class="note-fill-status" id="note-fill-status" role="status" aria-live="polite">Snap Mum's handwritten recipe and the form fills itself in, ready to check and edit.</p>
+          <span class="note-fill-icon" aria-hidden="true"></span>
+          <div class="note-fill-text">
+            <p class="note-fill-title">Have Mum's handwritten recipe?</p>
+            <p class="note-fill-status" id="note-fill-status" role="status" aria-live="polite">Snap it and the form fills itself in, ready to check and edit.</p>
+          </div>
+          <button type="button" id="fill-from-note" class="primary-btn">Fill from note</button>
           <input type="file" id="note-fill-file" accept="image/*" hidden>
         </div>
+        <p class="form-or" id="form-or" hidden><span>or fill it in yourself</span></p>
 
-        <label>Dish name (English)
-          <span class="field-with-mic">
-            <input type="text" id="field-name-en" placeholder="What you call it, e.g. Yam Cake" required>
-            <button type="button" class="mic-btn" data-target="field-name-en" data-lang="en-SG" aria-label="Record the English name with voice"></button>
-          </span>
-        </label>
-        <label>Dish name (Chinese)
-          <span class="field-with-mic">
-            <input type="text" id="field-name-cn" placeholder="What she calls it, e.g. 芋头糕">
-            <button type="button" class="mic-btn" data-target="field-name-cn" data-lang="zh-CN" aria-label="Record the Chinese name with voice"></button>
-          </span>
-        </label>
+        <div class="form-pair">
+          <label>Dish name (English)
+            <span class="field-with-mic">
+              <input type="text" id="field-name-en" placeholder="What you call it, e.g. Yam Cake" required>
+              <button type="button" class="mic-btn" data-target="field-name-en" data-lang="en-SG" aria-label="Record the English name with voice"></button>
+            </span>
+          </label>
+          <label>Dish name (Chinese)
+            <span class="field-with-mic">
+              <input type="text" id="field-name-cn" placeholder="What she calls it, e.g. 芋头糕">
+              <button type="button" class="mic-btn" data-target="field-name-cn" data-lang="zh-CN" aria-label="Record the Chinese name with voice"></button>
+            </span>
+          </label>
+        </div>
         <label>The story
           <span class="field-with-mic field-with-mic-area">
             <textarea id="field-story" rows="3" placeholder="When does she make this? For whom? Why does it matter?"></textarea>
@@ -95,26 +102,32 @@
         <div class="form-block">
           <div class="form-block-header">
             <span>Ingredients</span>
-            <button type="button" id="add-ingredient" class="mini-btn">+ Add ingredient</button>
+          </div>
+          <div class="ingredient-columns" aria-hidden="true">
+            <span>Her words</span>
+            <span>Your translation</span>
           </div>
           <div id="ingredient-rows"></div>
+          <button type="button" id="add-ingredient" class="text-btn">+ Add ingredient</button>
         </div>
 
         <div class="form-block">
           <div class="form-block-header">
             <span>Steps</span>
-            <button type="button" id="add-step" class="mini-btn">+ Add step</button>
           </div>
           <div id="step-rows"></div>
+          <button type="button" id="add-step" class="text-btn text-btn-steps">+ Add step</button>
         </div>
 
-        <!-- The native file input stays hidden; the pill opens it, matching
-             "+ Add ingredient" and "+ Add step". -->
         <div class="form-block">
           <div class="form-block-header">
             <span id="media-label">Photos, videos, voice recordings</span>
-            <button type="button" id="add-media" class="mini-btn">+ Add files</button>
           </div>
+          <!-- The native file input stays hidden; the dashed drop slip opens it. -->
+          <button type="button" id="add-media" class="media-drop">
+            <span class="media-drop-title">+ Add files</span>
+            <span class="media-drop-note">Photos, videos or voice recordings of her cooking</span>
+          </button>
           <input type="file" id="field-media" accept="image/*,video/*,audio/*" multiple hidden aria-labelledby="media-label">
           <div id="existing-media-preview"></div>
         </div>
@@ -224,7 +237,7 @@
   <!-- Universal Kueh Machine account. Mei Jun's editable recipes and media
        intentionally remain browser-local, as described by the backup UI. -->
   <script src="/shared/account-widget.js" data-accent-color="#b7472a"></script>
-  <script src="./recipes-seed.js?v=202610071400"></script>
-  <script src="./script.js?v=202610071400"></script>
+  <script src="./recipes-seed.js?v=202610071630"></script>
+  <script src="./script.js?v=202610071630"></script>
 </body>
 </html>
