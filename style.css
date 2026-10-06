@@ -308,7 +308,7 @@ body.modal-open {
   display: block;
   font-size: 0.9rem;
   color: var(--ink-soft);
-  margin-top: 0.85rem;
+  margin-top: 0.75rem;
 }
 
 /* Only the wrappers that follow a label need the gap; the ones inside
@@ -324,12 +324,12 @@ body.modal-open {
   width: 100%;
   margin-top: 0.35rem;
   font-family: var(--font-body);
-  font-size: 0.95rem;
+  font-size: 0.87rem;
   color: var(--ink);
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 3px;
-  padding: 0.5rem 0.6rem;
+  padding: 0.42rem 0.6rem;
 }
 
 /* Comes after the rule above so it wins the tie: a field inside a mic wrapper
@@ -446,8 +446,8 @@ body.modal-open {
 
 /* Ingredients, steps and media each start below a hairline. */
 .recipe-form .form-block {
-  margin-top: 1.05rem;
-  padding-top: 0.85rem;
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
   border-top: 1px solid var(--line);
 }
 
@@ -567,11 +567,11 @@ body.modal-open {
 .ingredient-row-input input,
 .step-row-input input {
   font-family: var(--font-body);
-  font-size: 0.9rem;
+  font-size: 0.87rem;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 3px;
-  padding: 0.45rem 0.55rem;
+  padding: 0.4rem 0.55rem;
   flex: 1;
   min-width: 0;
 }
