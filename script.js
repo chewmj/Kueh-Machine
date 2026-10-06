@@ -1168,7 +1168,7 @@ async function openRecipeFromHash() {
   if (recipe) {
     await openRecipeDetail(recipe);
   } else {
-    showToast('That recipe isn’t on this copy of the site');
+    showToast("That recipe isn't on this copy of the site");
   }
 }
 
@@ -1608,7 +1608,7 @@ async function openSharePanel(recipe) {
     /* A brief glimpse of the thumb, so it's clear the card scrolls. */
     preview.querySelector('img').addEventListener('load', () => showShareScrollThumb(), { once: true });
   } catch {
-    preview.innerHTML = '<p class="share-preview-wait">The card couldn’t be drawn here.</p>';
+    preview.innerHTML = '<p class="share-preview-wait">The card couldn\'t be drawn here.</p>';
   }
 }
 
@@ -1664,6 +1664,36 @@ function attachQuietScrollbar(scroller, host) {
 
 let showShareScrollThumb = () => {};
 
+/* Hands the visitor a file straight to their downloads. */
+function downloadFile(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+/* Save as PDF downloads the recipe card PDF that's already built for
+   sharing (story, photos, ingredients, steps, and the link back to the
+   site), so there's no print dialog to work through. Resolves to the file
+   name, or null if it couldn't be made. */
+async function downloadRecipePdf(recipe) {
+  const { pdf } = await recipeCardFiles(recipe);
+  if (!pdf) return null;
+  const name = recipeCardFileName(recipe).replace(/\.png$/, '.pdf');
+  downloadFile(pdf, name);
+  return name;
+}
+
+function setSavedStatus(name) {
+  const file = document.createElement('em');
+  file.textContent = name;
+  document.getElementById('share-status').replaceChildren('Saved ', file, ' to your downloads.');
+}
+
 function setupSharePanel() {
   const overlay = document.getElementById('share-overlay');
   const preview = document.getElementById('share-preview');
@@ -1687,7 +1717,7 @@ function setupSharePanel() {
       closeSharePanel();
       showToast('Recipe shared');
     } else if (result === 'failed') {
-      setShareStatus('The share sheet couldn’t open here. Download the card and send it instead.');
+      setShareStatus("The share sheet couldn't open here. Download the card and send it instead.");
     }
   });
 
@@ -1696,33 +1726,20 @@ function setupSharePanel() {
     if (!recipe) return;
     const blob = await recipeCardBlob(recipe);
     if (!blob) {
-      setShareStatus('The card couldn’t be drawn here. Try Save as PDF instead.');
+      setShareStatus("The card couldn't be drawn here. Try Save as PDF instead.");
       return;
     }
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = recipeCardFileName(recipe);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-    const status = document.getElementById('share-status');
-    const file = document.createElement('em');
-    file.textContent = link.download;
-    status.replaceChildren('Saved ', file, ' to your downloads.');
+    const name = recipeCardFileName(recipe);
+    downloadFile(blob, name);
+    setSavedStatus(name);
   });
 
-  /* The print stylesheet lays out the open recipe pop-up, so open it first
-     when sharing started from a card. */
   document.getElementById('share-pdf').addEventListener('click', async () => {
     const recipe = sharePanelRecipe;
     if (!recipe) return;
-    closeSharePanel();
-    const detail = document.getElementById('recipe-detail');
-    const detailOpen = !document.getElementById('recipe-detail-overlay').classList.contains('hidden');
-    if (!detailOpen || detail.dataset.id !== recipe.id) await openRecipeDetail(recipe);
-    printRecipe(recipe);
+    const name = await downloadRecipePdf(recipe);
+    if (name) setSavedStatus(name);
+    else setShareStatus("The PDF couldn't be made here. Try Download recipe card instead.");
   });
 }
 
@@ -1783,11 +1800,11 @@ async function importBackup(file) {
   try {
     payload = JSON.parse(await file.text());
   } catch {
-    showToast('That doesn’t look like a valid backup file');
+    showToast("That doesn't look like a valid backup file");
     return;
   }
   if (!payload || !Array.isArray(payload.recipes)) {
-    showToast('That doesn’t look like a valid backup file');
+    showToast("That doesn't look like a valid backup file");
     return;
   }
 
@@ -2366,7 +2383,9 @@ function setupRecipeDetail() {
       if (recipe) shareRecipe(recipe);
     } else if (e.target.closest('.detail-pdf')) {
       const recipe = recipeCache.get(id) || (await dbGet('recipes', id));
-      if (recipe) printRecipe(recipe);
+      if (!recipe) return;
+      const name = await downloadRecipePdf(recipe);
+      showToast(name ? `Saved ${name} to your downloads` : "The PDF couldn't be made here.");
     } else if (e.target.closest('.detail-edit')) {
       const recipe = await dbGet('recipes', id);
       closeRecipeDetail();
@@ -2449,7 +2468,7 @@ function voiceLangName(lang) {
 function voiceErrorMessage(code, lang) {
   switch (code) {
     case 'not-allowed':
-      return 'The microphone is blocked. Allow it for this site (the icon in the address bar), and for your browser in your device’s privacy settings, then try again.';
+      return "The microphone is blocked. Allow it for this site (the icon in the address bar), and for your browser in your device's privacy settings, then try again.";
     case 'service-not-allowed':
       return 'Voice input is switched off on this device. On iPhone, turn on Siri & Dictation in Settings, then try again.';
     case 'audio-capture':
@@ -2457,7 +2476,7 @@ function voiceErrorMessage(code, lang) {
     case 'network':
       return 'Voice input needs the internet to turn speech into text. Check your connection and try again.';
     case 'language-not-supported':
-      return `This browser can’t listen in ${voiceLangName(lang)}. Try the other field’s mic, or type it in.`;
+      return `This browser can't listen in ${voiceLangName(lang)}. Try the other field's mic, or type it in.`;
     case 'no-speech':
       return `Nothing heard in ${voiceLangName(lang)}. Tap the mic and try again.`;
     default:
@@ -2474,12 +2493,12 @@ function setupVoiceInput() {
   if (!SpeechRecognitionAPI) {
     document.querySelectorAll('.mic-btn').forEach((btn) => {
       btn.classList.add('unsupported');
-      btn.title = 'Voice input isn’t available in this browser';
+      btn.title = "Voice input isn't available in this browser";
     });
     /* A tooltip never shows on a phone, so say it when the mic is tapped. */
     document.body.addEventListener('click', (e) => {
       if (!e.target.closest('.mic-btn')) return;
-      showToast('Voice input isn’t available in this browser. Try Chrome, Edge, or Safari on iPhone.');
+      showToast("Voice input isn't available in this browser. Try Chrome, Edge, or Safari on iPhone.");
     });
     return;
   }
@@ -2545,7 +2564,7 @@ function setupVoiceInput() {
       active = session;
     } catch (err) {
       console.warn('Voice input could not start:', err);
-      showToast('Voice input couldn’t start. Tap the mic to try again.');
+      showToast("Voice input couldn't start. Tap the mic to try again.");
     }
   });
 }
