@@ -111,43 +111,51 @@ const SEED_RECIPES = [
       {
         "id": "orh-kueh-yam-cake-6",
         "type": "image",
-        "name": "Adding mixtures into big wok to cook and stir",
+        "name": "Add the mixture to a large wok",
         "description": "",
         "src": "./media/orh-kueh-yam-cake-6.jpg"
       },
       {
+        "poster": "./media/orh-kueh-yam-cake-7-poster.jpg",
         "id": "orh-kueh-yam-cake-7",
-        "type": "image",
-        "name": "Pour cooked mixtures into metal tray",
+        "type": "video",
+        "name": "Stir well as it cooks",
         "description": "",
-        "src": "./media/orh-kueh-yam-cake-7.jpg"
+        "src": "./media/orh-kueh-yam-cake-7.mp4"
       },
       {
         "id": "orh-kueh-yam-cake-8",
         "type": "image",
-        "name": "Smooth the cooked mixture",
+        "name": "Pour the cooked mixture into a metal tray and smooth the top",
         "description": "",
         "src": "./media/orh-kueh-yam-cake-8.jpg"
       },
       {
         "id": "orh-kueh-yam-cake-9",
         "type": "image",
-        "name": "Orh Kueh handwritten recipe",
+        "name": "Smooth the cooked mixture",
         "description": "",
         "src": "./media/orh-kueh-yam-cake-9.jpg"
       },
       {
         "id": "orh-kueh-yam-cake-10",
-        "type": "audio",
-        "name": "芋头糕.m4a",
+        "type": "image",
+        "name": "Orh Kueh handwritten recipe",
         "description": "",
-        "src": "./media/orh-kueh-yam-cake-10.m4a"
+        "src": "./media/orh-kueh-yam-cake-10.jpg"
+      },
+      {
+        "id": "orh-kueh-yam-cake-11",
+        "type": "audio",
+        "name": "芋头糕/Yam cake recipe",
+        "description": "In Mum's voice",
+        "src": "./media/orh-kueh-yam-cake-11.m4a"
       }
     ]
   },
   {
     "id": "1c4e528c-d621-4ed0-8a29-f4e21f8166b2",
-    "nameEn": "Fried honeycomb",
+    "nameEn": "Fried Honeycomb",
     "nameCn": "炸蜂窝",
     "story": "During chinese new year, it's a tradition that my mum would make this new year goodies for our relative and friends! Always my cousin's favourite CNY snacks!",
     "ingredients": [
@@ -236,8 +244,8 @@ const SEED_RECIPES = [
       {
         "id": "fried-honeycomb-7",
         "type": "audio",
-        "name": "Honeycomb recipe voice recording.m4a",
-        "description": "",
+        "name": "炸蜂窝 Fried honeycomb recipe",
+        "description": "In Mum's voice",
         "src": "./media/fried-honeycomb-7.m4a"
       }
     ]
@@ -332,15 +340,15 @@ const SEED_RECIPES = [
       {
         "id": "hainanese-yi-bua-kueh-co-4",
         "type": "audio",
-        "name": "Yi bua recipe.m4a",
-        "description": "",
+        "name": "薏粑 Yi bua recipe",
+        "description": "In Mum's voice",
         "src": "./media/hainanese-yi-bua-kueh-co-4.m4a"
       }
     ]
   },
   {
     "id": "bce4bd31-c5af-41a6-aa0e-8002fe869502",
-    "nameEn": "Tang yuan / Glutinous rice ball",
+    "nameEn": "Tang Yuan / Glutinous Rice Ball",
     "nameCn": "汤圆",
     "story": "During 冬至, winter solstice or 元宵节, during the Chinese New Year period, my mum will always make tang yuan for the family to signify 一家团圆, family reunion.",
     "ingredients": [
@@ -396,18 +404,33 @@ const SEED_RECIPES = [
         "src": "./media/tang-yuan-glutinous-rice-3.jpg"
       },
       {
+        "poster": "./media/tang-yuan-glutinous-rice-4-poster.jpg",
         "id": "tang-yuan-glutinous-rice-4",
-        "type": "image",
-        "name": "Cooking rolled tang yuan",
+        "type": "video",
+        "name": "Pink and white rolled tang yuan",
         "description": "",
-        "src": "./media/tang-yuan-glutinous-rice-4.jpg"
+        "src": "./media/tang-yuan-glutinous-rice-4.mp4"
       },
       {
         "id": "tang-yuan-glutinous-rice-5",
-        "type": "audio",
-        "name": "汤圆 recipe.m4a",
+        "type": "image",
+        "name": "Cooking rolled tang yuan",
         "description": "",
-        "src": "./media/tang-yuan-glutinous-rice-5.m4a"
+        "src": "./media/tang-yuan-glutinous-rice-5.jpg"
+      },
+      {
+        "id": "tang-yuan-glutinous-rice-6",
+        "type": "audio",
+        "name": "汤圆 Tang Yuan recipe",
+        "description": "In Mum's voice",
+        "src": "./media/tang-yuan-glutinous-rice-6.m4a"
+      },
+      {
+        "id": "tang-yuan-glutinous-rice-7",
+        "type": "image",
+        "name": "Tang yuan handwritten recipe",
+        "description": "",
+        "src": "./media/tang-yuan-glutinous-rice-7.jpg"
       }
     ]
   }
