@@ -2213,17 +2213,26 @@ body.modal-open {
 
 /* ---------- Toast ---------- */
 
+/* A rounded rectangle rather than a pill: longer messages wrap on phones,
+   and a fully rounded shape squeezed them into a circle that cut words off.
+   As wide as its text, up to the screen less a margin, and clear of the
+   iPhone home bar. */
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 1.75rem;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
+  width: max-content;
+  max-width: min(30rem, calc(100vw - 2rem));
+  box-sizing: border-box;
   background: var(--ink);
   color: var(--paper-card);
   font-family: var(--font-body);
   font-size: 0.9rem;
-  padding: 0.65rem 1.2rem;
-  border-radius: 999px;
+  line-height: 1.45;
+  text-align: center;
+  padding: 0.7rem 1.1rem;
+  border-radius: 12px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
   z-index: 200;
   transition: opacity 0.2s ease, transform 0.2s ease;
