@@ -84,8 +84,9 @@ function modelText(result) {
 }
 
 /* The first complete JSON object in the text, ignoring any words or code
-   fences around it. */
+   fences around it. Oversized replies are refused. */
 function extractJson(text) {
+  if (typeof text !== 'string' || text.length > 100000) return null;
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
   if (start < 0 || end <= start) return null;
@@ -96,19 +97,21 @@ function extractJson(text) {
   }
 }
 
-const asText = (value) => (typeof value === 'string' ? value.trim() : '');
+/* Plain strings only, trimmed to sensible lengths. The page checks again on
+   arrival and shows everything as text, never as HTML. */
+const asText = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
+const asList = (value, max) => (Array.isArray(value) ? value.slice(0, max) : []);
 
 /* Only the fields the form uses, as plain strings. */
 function cleanRecipe(raw) {
   return {
-    nameEn: asText(raw.nameEn),
-    nameCn: asText(raw.nameCn),
-    ingredients: (Array.isArray(raw.ingredients) ? raw.ingredients : [])
-      .map((i) => ({ her: asText(i && i.her), mine: asText(i && i.mine) }))
-      .filter((i) => i.her || i.mine)
-      .slice(0, 60),
-    steps: (Array.isArray(raw.steps) ? raw.steps : []).map(asText).filter(Boolean).slice(0, 60),
-    unsure: (Array.isArray(raw.unsure) ? raw.unsure : []).map(asText).filter(Boolean).slice(0, 10),
+    nameEn: asText(raw.nameEn, 200),
+    nameCn: asText(raw.nameCn, 200),
+    ingredients: asList(raw.ingredients, 60)
+      .map((i) => ({ her: asText(i && i.her, 300), mine: asText(i && i.mine, 300) }))
+      .filter((i) => i.her || i.mine),
+    steps: asList(raw.steps, 60).map((step) => asText(step, 2000)).filter(Boolean),
+    unsure: asList(raw.unsure, 10).map((item) => asText(item, 200)).filter(Boolean),
   };
 }
 

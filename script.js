@@ -334,6 +334,159 @@ async function fetchSeedMediaInBackground() {
   }
 }
 
+/* ---------- Safe rendering ---------- */
+
+/* Everything shown from a recipe, the glossary, a restored backup or the
+   handwriting reader is set as text or as an attribute value, never parsed
+   as HTML, so a crafted backup or response can't run code on the page. */
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs)) {
+    if (value == null || value === false) continue;
+    if (key === 'class') node.className = value;
+    else if (key === 'dataset') Object.assign(node.dataset, value);
+    else node.setAttribute(key, value === true ? '' : String(value));
+  }
+  for (const child of children.flat()) {
+    if (child == null || child === false || child === '') continue;
+    node.append(child instanceof Node ? child : String(child));
+  }
+  return node;
+}
+
+/* The site's own icons, from the fixed ICON table (never from data). */
+function icon(name) {
+  const template = document.createElement('template');
+  template.innerHTML = ICON[name];
+  return template.content.firstElementChild;
+}
+
+/* Only addresses the site makes itself: files in its own media folder, and
+   in-browser blob: copies. Anything else (javascript:, other sites, quotes)
+   is dropped. */
+function safeMediaUrl(url) {
+  if (typeof url !== 'string') return '';
+  if (/^blob:/.test(url)) return url;
+  if (/^\.\/media\/[\w\- .\/]+$/.test(url) && !url.includes('..')) return url;
+  return '';
+}
+
+const MEDIA_TYPES = ['image', 'video', 'audio'];
+const safeMediaType = (type) => (MEDIA_TYPES.includes(type) ? type : 'image');
+
+/* ---------- Validation ---------- */
+
+/* Limits for anything that arrives from outside the page: a backup file, or
+   the handwriting reader's response. Generous for real recipes, small
+   enough that a bad file can't flood the page or the browser's storage. */
+const LIMITS = {
+  backupBytes: 400 * 1024 * 1024,
+  noteResponseChars: 200000,
+  recipes: 500,
+  name: 200,
+  story: 5000,
+  ingredients: 200,
+  her: 300,
+  mine: 300,
+  steps: 200,
+  step: 2000,
+  media: 100,
+  mediaName: 200,
+  mediaNote: 1000,
+  mediaDataUrlChars: 200 * 1024 * 1024,
+  glossary: 1000,
+  term: 300,
+  meaning: 300,
+  unsure: 10,
+};
+
+const cleanText = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
+const cleanId = (value) => (typeof value === 'string' && /^[\w-]{1,100}$/.test(value) ? value : makeId());
+const cleanList = (value, max) => (Array.isArray(value) ? value.slice(0, max) : []);
+
+function cleanIngredients(value) {
+  return cleanList(value, LIMITS.ingredients)
+    .map((row) => ({ her: cleanText(row && row.her, LIMITS.her), mine: cleanText(row && row.mine, LIMITS.mine) }))
+    .filter((row) => row.her || row.mine);
+}
+
+function cleanSteps(value) {
+  return cleanList(value, LIMITS.steps).map((step) => cleanText(step, LIMITS.step)).filter(Boolean);
+}
+
+/* A recipe's text from a backup; null if it isn't a recipe at all. */
+function cleanImportedRecipe(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const nameEn = cleanText(raw.nameEn, LIMITS.name);
+  if (!nameEn) return null;
+  return {
+    id: cleanId(raw.id),
+    nameEn,
+    nameCn: cleanText(raw.nameCn, LIMITS.name),
+    story: cleanText(raw.story, LIMITS.story),
+    ingredients: cleanIngredients(raw.ingredients),
+    steps: cleanSteps(raw.steps),
+    ...(Number.isFinite(raw.order) ? { order: raw.order } : {}),
+    createdAt: Number.isFinite(raw.createdAt) ? raw.createdAt : Date.now(),
+    ...(Number.isFinite(raw.editedAt) ? { editedAt: raw.editedAt } : {}),
+    ...(typeof raw.seedHash === 'string' && /^[a-z0-9]{1,20}$/.test(raw.seedHash) ? { seedHash: raw.seedHash } : {}),
+  };
+}
+
+/* One photo, video or recording from a backup: its file must be embedded
+   data of the matching kind, or a file from the site's media folder. */
+async function cleanImportedMedia(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const type = MEDIA_TYPES.includes(raw.type) ? raw.type : null;
+  if (!type) return null;
+  const entry = {
+    id: cleanId(raw.id),
+    type,
+    name: cleanText(raw.name, LIMITS.mediaName),
+    description: cleanText(raw.description, LIMITS.mediaNote),
+  };
+  const src = safeMediaUrl(raw.src);
+  if (src && !src.startsWith('blob:')) entry.src = src;
+  const poster = safeMediaUrl(raw.poster);
+  if (poster && !poster.startsWith('blob:')) entry.poster = poster;
+  const thumb = safeMediaUrl(raw.thumb);
+  if (thumb && !thumb.startsWith('blob:')) entry.thumb = thumb;
+
+  const dataUrl = typeof raw.dataUrl === 'string' ? raw.dataUrl : '';
+  if (dataUrl) {
+    const match = dataUrl.match(/^data:(image|video|audio)\/[\w.+-]+;base64,/);
+    if (!match || match[1] !== type || dataUrl.length > LIMITS.mediaDataUrlChars) return null;
+    try {
+      entry.blob = await (await fetch(dataUrl)).blob();
+    } catch {
+      return null;
+    }
+  }
+  return entry.blob || entry.src ? entry : null;
+}
+
+function cleanGlossaryEntry(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const term = cleanText(raw.term, LIMITS.term);
+  const meaning = cleanText(raw.meaning, LIMITS.meaning);
+  if (!term || !meaning) return null;
+  return { id: cleanId(raw.id), term, meaning, ...(Number.isFinite(raw.order) ? { order: raw.order } : {}) };
+}
+
+/* What the handwriting reader sent back, kept only if it has the expected
+   shape; null otherwise. */
+function cleanNoteResult(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const recipe = {
+    nameEn: cleanText(raw.nameEn, LIMITS.name),
+    nameCn: cleanText(raw.nameCn, LIMITS.name),
+    ingredients: cleanIngredients(raw.ingredients),
+    steps: cleanSteps(raw.steps),
+    unsure: cleanList(raw.unsure, LIMITS.unsure).map((item) => cleanText(item, 200)).filter(Boolean),
+  };
+  return recipe.ingredients.length || recipe.steps.length ? recipe : null;
+}
+
 /* ---------- Glossary ---------- */
 
 /* Used only if recipes-seed.js is missing its own glossary. */
@@ -428,24 +581,16 @@ async function renderGlossary(filterText = '') {
      the full list, so the handles only show when nothing is filtered. */
   const sortable = !filterText;
   list.classList.toggle('sortable', sortable);
-  const handle = sortable
-    ? `<button type="button" class="drag-handle glossary-grip" aria-label="Drag to reorder, or use the arrow keys">${ICON.grip}</button>`
-    : '';
-
-  list.innerHTML = filtered
-    .map(
-      (entry) => `
-        <li data-id="${entry.id}">
-          ${handle}
-          <span class="term">${entry.term}</span>
-          <span class="arrow">→</span>
-          <span class="meaning">${entry.meaning}</span>
-          <button type="button" class="edit-term" aria-label="Edit this phrase">${ICON.edit}</button>
-          <button type="button" class="delete-term" aria-label="Remove">${ICON.trash}</button>
-        </li>
-      `
-    )
-    .join('') || `<li class="glossary-empty">Nothing matches “${filterText}”.</li>`;
+  const rows = filtered.map((entry) => el('li', { dataset: { id: entry.id } },
+    sortable
+      ? el('button', { type: 'button', class: 'drag-handle glossary-grip', 'aria-label': 'Drag to reorder, or use the arrow keys' }, icon('grip'))
+      : null,
+    el('span', { class: 'term' }, entry.term),
+    el('span', { class: 'arrow' }, '→'),
+    el('span', { class: 'meaning' }, entry.meaning),
+    el('button', { type: 'button', class: 'edit-term', 'aria-label': 'Edit this phrase' }, icon('edit')),
+    el('button', { type: 'button', class: 'delete-term', 'aria-label': 'Remove' }, icon('trash'))));
+  list.replaceChildren(...(rows.length ? rows : [el('li', { class: 'glossary-empty' }, `Nothing matches “${filterText}”.`)]));
 }
 
 function currentGlossaryFilter() {
@@ -707,17 +852,18 @@ function renderExistingMediaPreview() {
     const thumb = document.createElement('div');
     thumb.className = 'media-thumb';
     if (m.type === 'audio') {
-      thumb.innerHTML = '<span class="audio-thumb">🎙</span>';
+      thumb.replaceChildren(el('span', { class: 'audio-thumb' }, '🎙'));
     } else if (m.type === 'video') {
       thumbBlobFor(m).then((frame) => {
-        const still = frame ? URL.createObjectURL(frame) : m.poster;
-        thumb.innerHTML = still
-          ? `<span class="thumb-wrap"><img src="${still}" alt="" decoding="async"><span class="play-badge">▶</span></span>`
-          : `<span class="thumb-wrap"><video src="${m.blob ? URL.createObjectURL(m.blob) : m.src}" muted preload="metadata"></video><span class="play-badge">▶</span></span>`;
+        const still = frame ? URL.createObjectURL(frame) : safeMediaUrl(m.poster);
+        const inner = still
+          ? el('img', { src: still, alt: '', decoding: 'async' })
+          : el('video', { src: m.blob ? URL.createObjectURL(m.blob) : safeMediaUrl(m.src), muted: true, preload: 'metadata' });
+        thumb.replaceChildren(el('span', { class: 'thumb-wrap' }, inner, el('span', { class: 'play-badge' }, '▶')));
       });
     } else {
       thumbBlobFor(m).then((blob) => {
-        thumb.innerHTML = `<img src="${blob ? URL.createObjectURL(blob) : m.src}" alt="" decoding="async">`;
+        thumb.replaceChildren(el('img', { src: blob ? URL.createObjectURL(blob) : safeMediaUrl(m.src), alt: '', decoding: 'async' }));
       });
     }
 
@@ -1644,7 +1790,7 @@ async function openSharePanel(recipe) {
     if (sharePanelRecipe !== recipe || !blob) return;
     if (sharePreviewUrl) URL.revokeObjectURL(sharePreviewUrl);
     sharePreviewUrl = URL.createObjectURL(blob);
-    preview.innerHTML = `<img src="${sharePreviewUrl}" alt="">`;
+    preview.replaceChildren(el('img', { src: sharePreviewUrl, alt: '' }));
     /* A brief glimpse of the thumb, so it's clear the card scrolls. */
     preview.querySelector('img').addEventListener('load', () => showShareScrollThumb(), { once: true });
   } catch {
@@ -1836,40 +1982,61 @@ async function exportBackup() {
 }
 
 async function importBackup(file) {
+  const invalid = "That doesn't look like a Taste of Home backup file";
+  if (file.size > LIMITS.backupBytes) {
+    showToast('That backup file is too large to restore here');
+    return;
+  }
   let payload;
   try {
     payload = JSON.parse(await file.text());
   } catch {
-    showToast("That doesn't look like a valid backup file");
+    showToast(invalid);
     return;
   }
-  if (!payload || !Array.isArray(payload.recipes)) {
-    showToast("That doesn't look like a valid backup file");
+  if (!payload || payload.app !== 'tasteOfHome' || !Array.isArray(payload.recipes)) {
+    showToast(invalid);
     return;
   }
 
-  for (const recipe of payload.recipes) {
-    const media = await Promise.all(
-      (recipe.media || []).map(async (m) => ({
-        id: m.id || makeId(),
-        type: m.type,
-        name: m.name,
-        description: m.description || '',
-        ...(m.src ? { src: m.src } : {}),
-        blob: m.dataUrl ? await (await fetch(m.dataUrl)).blob() : m.blob,
-      }))
-    );
-    await dbPut('recipes', { ...recipe, media });
+  /* Everything is checked and cleaned before any of it is saved: text is
+     trimmed to sensible lengths, files must be embedded data of the right
+     kind, and anything that isn't a recipe or a phrase is left out. */
+  let skipped = Math.max(0, payload.recipes.length - LIMITS.recipes);
+  const recipes = [];
+  for (const raw of payload.recipes.slice(0, LIMITS.recipes)) {
+    const recipe = cleanImportedRecipe(raw);
+    if (!recipe) {
+      skipped += 1;
+      continue;
+    }
+    const media = [];
+    for (const item of cleanList(raw.media, LIMITS.media)) {
+      const clean = await cleanImportedMedia(item);
+      if (clean) media.push(clean);
+      else skipped += 1;
+    }
+    recipes.push({ ...recipe, media });
   }
+  const rawGlossary = cleanList(payload.glossary, LIMITS.glossary);
+  const glossary = rawGlossary.map(cleanGlossaryEntry).filter(Boolean);
+  skipped += rawGlossary.length - glossary.length;
 
-  for (const entry of payload.glossary || []) {
-    await dbPut('glossary', entry);
+  try {
+    for (const recipe of recipes) await dbPut('recipes', recipe);
+    for (const entry of glossary) await dbPut('glossary', entry);
+  } catch (err) {
+    /* Some private-browsing modes refuse to store photos and recordings. */
+    console.warn('Could not save the restored backup:', err);
+    showToast("This browser wouldn't save the restored recipes. Try a normal (not private) window.");
+    return;
   }
 
   renderRecipes();
   renderGlossary();
-  const count = payload.recipes.length;
-  showToast(`Restored ${count} recipe${count === 1 ? '' : 's'}`);
+  const count = recipes.length;
+  showToast(`Restored ${count} recipe${count === 1 ? '' : 's'}`
+    + (skipped ? `. ${skipped} item${skipped === 1 ? '' : 's'} couldn't be read and were left out.` : ''));
 }
 
 function setupBackup() {
@@ -1903,7 +2070,7 @@ function mediaUrl(blob) {
 
 /* A blob if we hold one, otherwise the file sitting in ./media/. */
 function mediaSrc(item) {
-  return item.blob ? mediaUrl(item.blob) : item.src;
+  return item.blob ? mediaUrl(item.blob) : safeMediaUrl(item.src);
 }
 
 const THUMB_MAX = 480;
@@ -2007,46 +2174,45 @@ function mediaTypeOf(file) {
 
 /* Cards and the pop-up gallery show small copies; only the viewer loads the
    full-size file. */
-async function mediaTag(item, alt, { playable = false } = {}) {
+async function mediaNode(item, alt, { playable = false } = {}) {
   if (item.type === 'audio') {
-    const url = mediaSrc(item);
-    return `<audio src="${url}" ${playable ? 'controls' : ''}></audio>`;
+    return el('audio', { src: mediaSrc(item), controls: playable });
   }
 
   if (item.type === 'video') {
     if (playable) {
-      return `<video src="${mediaSrc(item)}" controls playsinline preload="metadata"></video>`;
+      return el('video', { src: mediaSrc(item), controls: true, playsinline: true, preload: 'metadata' });
     }
 
     /* Built-in videos ship with a poster; don't download and decode the
        whole video just to make a card-sized still. (From Leonard.) */
-    const frame = item.poster ? null : await thumbBlobFor(item);
-    const still = item.poster || (frame ? mediaUrl(frame) : null);
+    const poster = safeMediaUrl(item.poster);
+    const frame = poster ? null : await thumbBlobFor(item);
+    const still = poster || (frame ? mediaUrl(frame) : null);
     const inner = still
-      ? `<img src="${still}" alt="${alt}" loading="lazy" decoding="async">`
-      : `<video src="${mediaSrc(item)}" muted playsinline preload="metadata"></video>`;
-    return `<span class="thumb-wrap">${inner}<span class="play-badge">▶</span></span>`;
+      ? el('img', { src: still, alt, loading: 'lazy', decoding: 'async' })
+      : el('video', { src: mediaSrc(item), muted: true, playsinline: true, preload: 'metadata' });
+    return el('span', { class: 'thumb-wrap' }, inner, el('span', { class: 'play-badge' }, '▶'));
   }
 
   /* Built-in photos ship with a small thumbnail made by build-seed.py;
      only photos added in the browser need one made here. */
-  const thumb = item.thumb ? null : await thumbBlobFor(item);
-  const url = item.thumb || (thumb ? mediaUrl(thumb) : item.src);
-  return `<img src="${url}" alt="${alt}" loading="lazy" decoding="async">`;
+  const builtInThumb = safeMediaUrl(item.thumb);
+  const thumb = builtInThumb ? null : await thumbBlobFor(item);
+  const url = builtInThumb || (thumb ? mediaUrl(thumb) : mediaSrc(item));
+  return el('img', { src: url, alt, loading: 'lazy', decoding: 'async' });
 }
 
-function ingredientsHtml(recipe) {
-  return recipe.ingredients
-    .map(
-      (row) => `
-        <div class="ingredient-row">
-          <span class="her-words">${row.her}</span>
-          <span class="arrow">→</span>
-          <span class="my-words">${row.mine}</span>
-        </div>
-      `
-    )
-    .join('');
+function ingredientRows(recipe) {
+  return recipe.ingredients.map((row) => el('div', { class: 'ingredient-row' },
+    el('span', { class: 'her-words' }, row.her),
+    el('span', { class: 'arrow' }, '→'),
+    el('span', { class: 'my-words' }, row.mine)));
+}
+
+/* "Orh Kueh / Yam Cake" with the Chinese name in its smaller span. */
+function dishHeading(tag, recipe, attrs = {}) {
+  return el(tag, attrs, recipe.nameEn, recipe.nameCn ? [' ', el('span', { class: 'cn' }, recipe.nameCn)] : null);
 }
 
 /* ---------- Recipe cards (preview) ---------- */
@@ -2108,19 +2274,14 @@ async function buildRecipeCard(recipe, index, total) {
   const recordings = media.length - visual.length;
 
   const cover = visual.find((m) => m.type === 'image') || visual[0];
-  const coverHtml = cover
-    ? `<div class="card-cover">${await mediaTag(cover, recipe.nameEn)}</div>`
-    : '';
+  const coverNode = cover ? el('div', { class: 'card-cover' }, await mediaNode(cover, recipe.nameEn)) : null;
 
   const rest = visual.filter((m) => m !== cover).slice(0, 4);
   const remaining = visual.length - 1 - rest.length;
-  const stripTags = await Promise.all(rest.map((m) => mediaTag(m, recipe.nameEn)));
-  const stripHtml = rest.length
-    ? `<div class="card-strip">
-         ${stripTags.join('')}
-         ${remaining > 0 ? `<span class="more-count">+${remaining}</span>` : ''}
-       </div>`
-    : '';
+  const stripNodes = await Promise.all(rest.map((m) => mediaNode(m, recipe.nameEn)));
+  const stripNode = rest.length
+    ? el('div', { class: 'card-strip' }, stripNodes, remaining > 0 ? el('span', { class: 'more-count' }, `+${remaining}`) : null)
+    : null;
 
   const counts = [];
   const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -2128,22 +2289,21 @@ async function buildRecipeCard(recipe, index, total) {
   if (recipe.steps.length) counts.push(plural(recipe.steps.length, 'step'));
   if (recordings) counts.push(`🎙 ${plural(recordings, 'recording')}`);
 
-  card.innerHTML = `
-    <div class="card-actions">
-      <button type="button" class="drag-recipe" aria-label="Drag to reorder this recipe, or use the arrow keys">${ICON.grip}</button>
-      <button type="button" class="share-recipe" aria-label="Share recipe">${ICON.share}</button>
-      <button type="button" class="edit-recipe" aria-label="Edit recipe">${ICON.edit}</button>
-      <button type="button" class="delete-recipe" aria-label="Delete recipe">${ICON.trash}</button>
-    </div>
-    <h3>${recipe.nameEn} ${recipe.nameCn ? `<span class="cn">${recipe.nameCn}</span>` : ''}</h3>
-    ${recipe.story ? `<p class="recipe-story">${recipe.story}</p>` : ''}
-    ${coverHtml}
-    ${stripHtml}
-    <p class="card-open-cue">
-      <span class="cue-counts">${counts.join(' · ') || 'Not written down yet'}</span>
-      <span class="cue-link">Read the full recipe →</span>
-    </p>
-  `;
+  const parts = [
+    el('div', { class: 'card-actions' },
+      el('button', { type: 'button', class: 'drag-recipe', 'aria-label': 'Drag to reorder this recipe, or use the arrow keys' }, icon('grip')),
+      el('button', { type: 'button', class: 'share-recipe', 'aria-label': 'Share recipe' }, icon('share')),
+      el('button', { type: 'button', class: 'edit-recipe', 'aria-label': 'Edit recipe' }, icon('edit')),
+      el('button', { type: 'button', class: 'delete-recipe', 'aria-label': 'Delete recipe' }, icon('trash'))),
+    dishHeading('h3', recipe),
+    recipe.story ? el('p', { class: 'recipe-story' }, recipe.story) : null,
+    coverNode,
+    stripNode,
+    el('p', { class: 'card-open-cue' },
+      el('span', { class: 'cue-counts' }, counts.join(' · ') || 'Not written down yet'),
+      el('span', { class: 'cue-link' }, 'Read the full recipe →')),
+  ];
+  card.replaceChildren(...parts.filter(Boolean));
 
   return card;
 }
@@ -2163,65 +2323,50 @@ async function openRecipeDetail(recipe) {
   const recordings = media.filter((m) => m.type === 'audio');
 
   /* Videos sit in the grid as thumbnails and expand into a player on click. */
-  const galleryTiles = await Promise.all(
-    visual.map(
-      async (m) => `<div class="gallery-item ${m.type}" data-media-id="${m.id}" role="button" tabindex="0"
-        aria-label="${m.type === 'video' ? 'Play' : 'Open'} ${m.name || 'this ' + m.type}">${await mediaTag(m, recipe.nameEn)}</div>`
-    )
-  );
-  const galleryHtml = visual.length ? `<div class="detail-gallery">${galleryTiles.join('')}</div>` : '';
+  const galleryTiles = await Promise.all(visual.map(async (m) => {
+    const type = safeMediaType(m.type);
+    return el('div', {
+      class: `gallery-item ${type}`,
+      dataset: { mediaId: m.id },
+      role: 'button',
+      tabindex: '0',
+      'aria-label': `${type === 'video' ? 'Play' : 'Open'} ${m.name || `this ${type}`}`,
+    }, await mediaNode(m, recipe.nameEn));
+  }));
 
-  const audioItems = await Promise.all(
-    recordings.map(
-      async (m) => `<li>
-        <span class="audio-name">🎙 ${m.name || 'Recording'}</span>
-        ${m.description ? `<span class="audio-note">${m.description}</span>` : ''}
-        ${await mediaTag(m, recipe.nameEn, { playable: true })}
-      </li>`
-    )
-  );
-  const audioHtml = recordings.length
-    ? `<div class="detail-block">
-         <h4>In her own words <span class="cn">原话</span></h4>
-         <p class="detail-note">Her instructions, as she gave them.</p>
-         <ul class="audio-list">${audioItems.join('')}</ul>
-       </div>`
-    : '';
+  const block = (title, cn, note, ...content) => el('div', { class: 'detail-block' },
+    el('h4', {}, title, ' ', el('span', { class: 'cn' }, cn)),
+    note ? el('p', { class: 'detail-note' }, note) : null,
+    content);
 
-  const stepsHtml = recipe.steps.length
-    ? `<div class="detail-block">
-         <h4>Steps <span class="cn">做法</span></h4>
-         <ol class="steps-list">${recipe.steps.map((s) => `<li>${s}</li>`).join('')}</ol>
-       </div>`
-    : '';
+  const audioItems = await Promise.all(recordings.map(async (m) => el('li', {},
+    el('span', { class: 'audio-name' }, `🎙 ${m.name || 'Recording'}`),
+    m.description ? el('span', { class: 'audio-note' }, m.description) : null,
+    await mediaNode(m, recipe.nameEn, { playable: true }))));
 
-  const ingredientsBlock = recipe.ingredients.length
-    ? `<div class="detail-block">
-         <h4>Ingredients <span class="cn">材料</span></h4>
-         <p class="detail-note">Her words, and the measurements I landed on.</p>
-         <div class="ingredients">${ingredientsHtml(recipe)}</div>
-       </div>`
-    : '';
-
-  const nothingYet = !recipe.ingredients.length && !recipe.steps.length && !recordings.length
-    ? '<p class="steps-placeholder">Still to be written down properly with her.</p>'
-    : '';
-
-  panel.innerHTML = `
-    <button type="button" id="close-recipe-detail" class="close-btn" aria-label="Close">×</button>
-    <h3 id="recipe-detail-heading">${recipe.nameEn} ${recipe.nameCn ? `<span class="cn">${recipe.nameCn}</span>` : ''}</h3>
-    ${recipe.story ? `<p class="recipe-story">${recipe.story}</p>` : ''}
-    ${galleryHtml}
-    ${audioHtml}
-    ${ingredientsBlock}
-    ${stepsHtml}
-    ${nothingYet}
-    <div class="detail-actions">
-      <button type="button" class="mini-btn detail-share" aria-label="Share recipe">${ICON.share}<span class="btn-label">Share</span></button>
-      <button type="button" class="mini-btn detail-pdf" aria-label="Save as PDF">${ICON.pdf}<span class="btn-label">Save as PDF</span></button>
-      <button type="button" class="mini-btn detail-edit" aria-label="Edit this recipe">${ICON.edit}<span class="btn-label">Edit this recipe</span></button>
-    </div>
-  `;
+  const parts = [
+    el('button', { type: 'button', id: 'close-recipe-detail', class: 'close-btn', 'aria-label': 'Close' }, '×'),
+    dishHeading('h3', recipe, { id: 'recipe-detail-heading' }),
+    recipe.story ? el('p', { class: 'recipe-story' }, recipe.story) : null,
+    visual.length ? el('div', { class: 'detail-gallery' }, galleryTiles) : null,
+    recordings.length
+      ? block('In her own words', '原话', 'Her instructions, as she gave them.', el('ul', { class: 'audio-list' }, audioItems))
+      : null,
+    recipe.ingredients.length
+      ? block('Ingredients', '材料', 'Her words, and the measurements I landed on.', el('div', { class: 'ingredients' }, ingredientRows(recipe)))
+      : null,
+    recipe.steps.length
+      ? block('Steps', '做法', null, el('ol', { class: 'steps-list' }, recipe.steps.map((step) => el('li', {}, step))))
+      : null,
+    !recipe.ingredients.length && !recipe.steps.length && !recordings.length
+      ? el('p', { class: 'steps-placeholder' }, 'Still to be written down properly with her.')
+      : null,
+    el('div', { class: 'detail-actions' },
+      el('button', { type: 'button', class: 'mini-btn detail-share', 'aria-label': 'Share recipe' }, icon('share'), el('span', { class: 'btn-label' }, 'Share')),
+      el('button', { type: 'button', class: 'mini-btn detail-pdf', 'aria-label': 'Save as PDF' }, icon('pdf'), el('span', { class: 'btn-label' }, 'Save as PDF')),
+      el('button', { type: 'button', class: 'mini-btn detail-edit', 'aria-label': 'Edit this recipe' }, icon('edit'), el('span', { class: 'btn-label' }, 'Edit this recipe'))),
+  ];
+  panel.replaceChildren(...parts.filter(Boolean));
 
   panel.dataset.id = recipe.id;
   panel.scrollTop = 0;
@@ -2728,9 +2873,25 @@ async function readHandwrittenNote(file) {
     } finally {
       clearTimeout(timer);
     }
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok || result.error) {
-      setNoteStatus(NOTE_ERRORS[result.error] || "Couldn't read the note right now. Try again in a moment, or type it in.");
+    /* The reply is outside data: size-capped, parsed carefully, and only
+       used if it has the expected shape. */
+    const replyText = await response.text();
+    let reply = {};
+    if (replyText.length <= LIMITS.noteResponseChars) {
+      try {
+        reply = JSON.parse(replyText);
+      } catch {
+        reply = {};
+      }
+    }
+    const errorCode = reply && typeof reply.error === 'string' ? reply.error : '';
+    if (!response.ok || errorCode) {
+      setNoteStatus(NOTE_ERRORS[errorCode] || "Couldn't read the note right now. Try again in a moment, or type it in.");
+      return;
+    }
+    const result = cleanNoteResult(reply);
+    if (!result) {
+      setNoteStatus(NOTE_ERRORS.nothing_found);
       return;
     }
 
