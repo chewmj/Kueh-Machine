@@ -900,6 +900,7 @@ function renderExistingMediaPreview() {
 
 function fillFormForEdit(recipe) {
   formFilledFromNote = false;
+  clearDishNameError();
   /* Opening or closing the form ends any read, so a late reply can't fill it. */
   stopNoteReading('closed');
   editingRecipe = recipe;
@@ -943,13 +944,35 @@ function closeRecipeForm() {
   fillFormForEdit(null);
 }
 
+/* Saving without an English name: mark the field and say what's needed, the
+   same way the glossary's "Add a new phrase" does. Typing clears it. */
+function showDishNameError() {
+  const field = document.getElementById('field-name-en');
+  const error = document.getElementById('field-name-en-error');
+  field.setAttribute('aria-invalid', 'true');
+  error.textContent = 'Add a name for the dish, e.g. Yam Cake.';
+  error.hidden = false;
+  field.focus({ preventScroll: true });
+  field.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+function clearDishNameError() {
+  document.getElementById('field-name-en').removeAttribute('aria-invalid');
+  const error = document.getElementById('field-name-en-error');
+  error.hidden = true;
+  error.textContent = '';
+}
+
 async function handleRecipeSubmit(e) {
   e.preventDefault();
 
   const nameEn = document.getElementById('field-name-en').value.trim();
   const nameCn = document.getElementById('field-name-cn').value.trim();
   const story = document.getElementById('field-story').value.trim();
-  if (!nameEn) return;
+  if (!nameEn) {
+    showDishNameError();
+    return;
+  }
 
   const ingredients = Array.from(document.querySelectorAll('.ingredient-row-input'))
     .map((row) => ({
@@ -1076,6 +1099,9 @@ function setupRecipeForm() {
     if (e.target.id === 'recipe-form-overlay') closeRecipeForm();
   });
 
+  document.getElementById('field-name-en').addEventListener('input', (e) => {
+    if (e.target.value.trim()) clearDishNameError();
+  });
   document.getElementById('add-ingredient').addEventListener('click', () => addIngredientRow());
   document.getElementById('add-step').addEventListener('click', () => addStepRow());
 
@@ -2892,7 +2918,10 @@ let formFilledFromNote = false;
 
 function fillFormFromNote(recipe) {
   formFilledFromNote = true;
-  if (recipe.nameEn) document.getElementById('field-name-en').value = recipe.nameEn;
+  if (recipe.nameEn) {
+    document.getElementById('field-name-en').value = recipe.nameEn;
+    clearDishNameError();
+  }
   if (recipe.nameCn) document.getElementById('field-name-cn').value = recipe.nameCn;
   document.getElementById('ingredient-rows').innerHTML = '';
   recipe.ingredients.forEach((i) => addIngredientRow(i.her, i.mine));

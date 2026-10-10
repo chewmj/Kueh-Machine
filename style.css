@@ -2460,9 +2460,36 @@ body.modal-open {
 
 /* A missing half: terracotta edge and a faint wash, and a line under the
    row saying what's needed. */
-.glossary-add input[aria-invalid="true"] {
+.glossary-add input[aria-invalid="true"],
+.recipe-form input[aria-invalid="true"] {
   border-color: var(--accent);
   background: rgba(183, 71, 42, 0.05);
+}
+
+/* Focus as in the glossary: the warm border instead of the browser's blue
+   ring; a field that needs attention keeps its terracotta edge. */
+.recipe-form input[type="text"]:focus,
+.recipe-form textarea:focus,
+.ingredient-row-input input:focus,
+.step-row-input input:focus {
+  outline: none;
+  border-color: var(--accent-soft);
+}
+
+.recipe-form input[aria-invalid="true"]:focus {
+  border-color: var(--accent);
+}
+
+/* A field's own message, under it, as in "Add a new phrase". */
+.recipe-form .field-error {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.recipe-form .field-error[hidden] {
+  display: none;
 }
 
 .glossary-add-error {
