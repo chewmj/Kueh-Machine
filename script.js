@@ -2811,7 +2811,7 @@ function setNoteStatus(message, unsure = []) {
   if (unsure.length) {
     const list = document.createElement('span');
     list.className = 'note-fill-unsure';
-    list.textContent = `Couldn't read for sure: ${unsure.join('; ')}.`;
+    list.textContent = `Worth a quick check: ${unsure.join('; ')}.`;
     status.append(list);
   }
 }
