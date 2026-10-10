@@ -404,7 +404,10 @@ body.modal-open {
   color: var(--ink-soft);
 }
 
+/* What the reader wasn't sure of, on its own line under the result. */
 .note-fill-unsure {
+  display: block;
+  margin-top: 0.2rem;
   color: var(--accent);
 }
 

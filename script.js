@@ -2812,7 +2812,7 @@ function setNoteStatus(message, unsure = []) {
     const list = document.createElement('span');
     list.className = 'note-fill-unsure';
     list.textContent = `Couldn't read for sure: ${unsure.join('; ')}.`;
-    status.append(' ', list);
+    status.append(list);
   }
 }
 
