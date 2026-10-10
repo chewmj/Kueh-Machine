@@ -2965,8 +2965,8 @@ async function readHandwrittenNote(file) {
     box.removeAttribute('aria-busy');
     button.disabled = false;
     button.textContent = idleLabel;
-    if (hadFocus) button.focus({ preventScroll: true });
     box.classList.remove('reading');
+    if (hadFocus) button.focus({ preventScroll: true });
   }
 }
 
