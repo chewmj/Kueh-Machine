@@ -2873,18 +2873,20 @@ async function readHandwrittenNote(file) {
   const reading = { controller: new AbortController(), reason: '' };
   noteReading = reading;
   const stopped = () => reading.reason === 'stopped' || reading.reason === 'closed';
-  /* While reading, the button shows a spinner and "Reading…", and a quiet
-     Cancel appears beside it. */
+  /* While reading, the banner shows a sheet of paper with a spinner, says
+     what's happening, and offers ✕ to cancel (see .note-fill.reading). */
   const cancel = document.getElementById('note-fill-cancel');
+  const title = box.querySelector('.note-fill-title');
+  const idleTitle = title.textContent;
   button.disabled = true;
-  button.setAttribute('aria-busy', 'true');
-  button.replaceChildren(el('span', { class: 'note-spinner', 'aria-hidden': 'true' }), 'Reading…');
+  box.setAttribute('aria-busy', 'true');
   cancel.hidden = false;
   box.classList.add('reading');
-  setNoteStatus("Reading Mum's handwriting… This can take a minute.");
+  title.textContent = "Reading Mum's handwriting…";
+  setNoteStatus('This can take a minute.');
   /* If it runs long, suggest skipping it and filling the form in by hand. */
   const slowTimer = setTimeout(() => {
-    if (noteReading === reading) setNoteStatus("Still reading… If it's taking too long, tap Cancel and add the recipe below.");
+    if (noteReading === reading) setNoteStatus("Still reading. If it's taking too long, tap ✕ and add the recipe below.");
   }, NOTE_SLOW_AFTER_MS);
 
   try {
@@ -2955,12 +2957,15 @@ async function readHandwrittenNote(file) {
     clearTimeout(slowTimer);
     if (noteReading === reading) noteReading = null;
     if (reading.reason === 'stopped') setNoteStatus('Cancelled. Add the recipe below, or upload the photo again.');
-    const hadFocus = document.activeElement === cancel;
+    /* Focus sat on ✕ (or fell to the page when ✕ hid): hand it to Upload,
+       never away from a field someone is typing in. */
+    const hadFocus = document.activeElement === cancel || document.activeElement === document.body;
     cancel.hidden = true;
+    title.textContent = idleTitle;
+    box.removeAttribute('aria-busy');
     button.disabled = false;
-    button.removeAttribute('aria-busy');
     button.textContent = idleLabel;
-    if (hadFocus) button.focus();
+    if (hadFocus) button.focus({ preventScroll: true });
     box.classList.remove('reading');
   }
 }
