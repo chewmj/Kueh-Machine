@@ -357,10 +357,11 @@ body.modal-open {
 }
 
 /* "Fill from note": a banner at the top of the form, then a quiet "or"
-   rule leading into the fields. */
+   rule leading into the fields. The icon and button stay level with the
+   title, however tall the text below it grows. */
 .note-fill {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.7rem;
   margin-top: 0.9rem;
   padding: 0.7rem 0.9rem;
@@ -373,6 +374,7 @@ body.modal-open {
 .note-fill-icon {
   flex: 0 0 auto;
   display: flex;
+  margin-top: 0.08rem;
   color: var(--accent);
 }
 
@@ -425,6 +427,7 @@ body.modal-open {
 
 .note-fill .mini-btn {
   flex: 0 0 auto;
+  margin-top: -0.25rem;
 }
 
 .note-fill .mini-btn[disabled] {
@@ -477,6 +480,7 @@ body.modal-open {
 /* The ✕ that cancels the read. */
 .note-fill-close {
   flex: 0 0 auto;
+  margin-top: -0.38rem;
   width: 2rem;
   height: 2rem;
   display: flex;
@@ -2652,10 +2656,6 @@ body.modal-open {
 
   .form-pair {
     grid-template-columns: 1fr;
-  }
-
-  .note-fill {
-    align-items: flex-start;
   }
 
   /* Stacked on phones: one line saying which field is which. */
