@@ -412,8 +412,22 @@ body.modal-open {
   flex: 0 0 auto;
 }
 
-.note-fill .mini-btn[disabled] {
-  cursor: progress;
+/* While reading, the button reads "Reading…" and offers "✕ Stop" on
+   hover or keyboard focus; on touch screens a tap simply stops it. */
+.note-stop-label {
+  display: none;
+}
+
+.note-fill.reading .mini-btn:hover .note-reading-label,
+.note-fill.reading .mini-btn:focus-visible .note-reading-label,
+.note-fill.reading .mini-btn:hover .note-spinner,
+.note-fill.reading .mini-btn:focus-visible .note-spinner {
+  display: none;
+}
+
+.note-fill.reading .mini-btn:hover .note-stop-label,
+.note-fill.reading .mini-btn:focus-visible .note-stop-label {
+  display: inline;
 }
 
 /* ---- While a note is being read ---- */

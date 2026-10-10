@@ -899,6 +899,8 @@ function renderExistingMediaPreview() {
 }
 
 function fillFormForEdit(recipe) {
+  /* Opening or closing the form ends any read, so a late reply can't fill it. */
+  stopNoteReading('closed');
   editingRecipe = recipe;
   const noteStatus = document.getElementById('note-fill-status');
   if (noteStatus) noteStatus.textContent = noteStatus.dataset.start || (noteStatus.dataset.start = noteStatus.textContent);
@@ -2853,21 +2855,42 @@ function fillFormFromNote(recipe) {
   if (!recipe.steps.length) addStepRow();
 }
 
+/* The read in progress, if any: lets the button (or closing the form)
+   stop it. */
+let noteReading = null;
+
+function stopNoteReading(reason = 'stopped') {
+  if (!noteReading) return;
+  noteReading.reason = reason;
+  noteReading.controller.abort();
+}
+
 async function readHandwrittenNote(file) {
   const button = document.getElementById('fill-from-note');
   const box = document.getElementById('note-fill');
   const idleLabel = button.textContent;
-  /* While reading, the button turns into a small spinner (see .note-fill.reading). */
-  button.disabled = true;
+  const reading = { controller: new AbortController(), reason: '' };
+  noteReading = reading;
+  const stopped = () => reading.reason === 'stopped' || reading.reason === 'closed';
+  /* While reading, the button shows a spinner and "Reading…", and becomes a
+     Stop button (see .note-fill.reading). */
   button.setAttribute('aria-busy', 'true');
-  button.replaceChildren(el('span', { class: 'note-spinner', 'aria-hidden': 'true' }), 'Reading…');
+  button.setAttribute('aria-label', 'Stop reading the note');
+  button.replaceChildren(
+    el('span', { class: 'note-spinner', 'aria-hidden': 'true' }),
+    el('span', { class: 'note-reading-label' }, 'Reading…'),
+    el('span', { class: 'note-stop-label' }, '✕ Stop'));
   box.classList.add('reading');
   setNoteStatus("Reading Mum's handwriting… This can take a minute.");
 
   try {
     const photo = await notePhotoAsJpeg(file);
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 150000);
+    if (stopped()) return;
+    const controller = reading.controller;
+    const timer = setTimeout(() => {
+      reading.reason = 'timeout';
+      controller.abort();
+    }, 150000);
     let response;
     try {
       response = await fetch(RECIPE_READER_URL, {
@@ -2882,6 +2905,7 @@ async function readHandwrittenNote(file) {
     /* The reply is outside data: size-capped, parsed carefully, and only
        used if it has the expected shape. */
     const replyText = await response.text();
+    if (stopped()) return;
     let reply = {};
     if (replyText.length <= LIMITS.noteResponseChars) {
       try {
@@ -2920,11 +2944,14 @@ async function readHandwrittenNote(file) {
     renderExistingMediaPreview();
     setNoteStatus('Filled in from the note. Check it over and edit anything before saving.', result.unsure || []);
   } catch (err) {
+    if (stopped()) return;
     console.warn('Could not read the note:', err);
     setNoteStatus(err.name === 'AbortError' ? NOTE_ERRORS.timeout : "Couldn't read the note right now. Try again in a moment, or type it in.");
   } finally {
-    button.disabled = false;
+    if (noteReading === reading) noteReading = null;
+    if (reading.reason === 'stopped') setNoteStatus('Stopped. Upload the photo again whenever you like.');
     button.removeAttribute('aria-busy');
+    button.setAttribute('aria-label', 'Upload a photo of a handwritten recipe');
     button.textContent = idleLabel;
     box.classList.remove('reading');
   }
@@ -2938,7 +2965,11 @@ function setupNoteFill() {
   box.querySelector('.note-fill-icon').innerHTML = ICON.camera;
   box.hidden = false;
   document.getElementById('form-or').hidden = false;
-  button.addEventListener('click', () => input.click());
+  /* While a note is being read, the same button stops it. */
+  button.addEventListener('click', () => {
+    if (noteReading) stopNoteReading('stopped');
+    else input.click();
+  });
   input.addEventListener('change', () => {
     const file = input.files[0];
     input.value = '';
