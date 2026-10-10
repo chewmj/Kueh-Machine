@@ -942,11 +942,13 @@ body.modal-open {
   border-radius: 3px;
 }
 
+/* The row sits on the form's own paper, so its fields read like every
+   other field. The thumbnail stretches to the two fields' combined height. */
 .media-row {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: var(--paper);
+  background: var(--paper-card);
   border: 1px dashed var(--line);
   border-radius: 2px;
   padding: 0.4rem 0.6rem;
@@ -967,35 +969,62 @@ body.modal-open {
   padding: 0.3rem 0.4rem;
 }
 
+/* A square exactly as tall as the two fields and the gap between them. */
+.media-row {
+  --media-field-h: 1.9rem;
+  --media-field-gap: 0.2rem;
+}
+
+.media-row .media-thumb {
+  flex: 0 0 auto;
+  display: flex;
+  width: calc(var(--media-field-h) * 2 + var(--media-field-gap));
+  height: calc(var(--media-field-h) * 2 + var(--media-field-gap));
+}
+
+.media-row .media-thumb .thumb-wrap {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
 .media-row .media-thumb img,
 .media-row .media-thumb video,
 .media-row .media-thumb .audio-thumb {
-  width: 56px;
-  height: 56px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   border-radius: 2px;
   font-size: 1.2rem;
 }
 
+.media-row .drag-handle,
+.media-row .remove-media {
+  align-self: center;
+}
+
 .media-fields {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: var(--media-field-gap, 0.2rem);
   flex: 1;
   min-width: 0;
 }
 
 /* Scoped to the row so it outranks the form's general input rule, which
    would otherwise add its own top margin and taller padding. */
+/* Same treatment as the ingredient and step fields: cream field, hairline
+   border, same text size and padding. */
 .recipe-form .media-row .media-name-input,
 .recipe-form .media-row .media-desc-input {
   margin-top: 0;
   font-family: var(--font-body);
-  font-size: 0.85rem;
-  padding: 0.25rem 0.55rem;
+  font-size: 0.87rem;
+  height: var(--media-field-h);
+  padding: 0 0.55rem;
   border: 1px solid var(--line);
   border-radius: 3px;
-  background: var(--paper-card);
+  background: var(--paper);
   color: var(--ink);
   width: 100%;
 }
@@ -2678,6 +2707,10 @@ body.modal-open {
 
   .glossary-card {
     --card-pad: 1.1rem;
+  }
+
+  .media-row {
+    --media-field-h: 2.25rem;
   }
 
   .glossary-card {
