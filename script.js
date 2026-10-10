@@ -2797,7 +2797,7 @@ const RECIPE_READER_URL = 'https://meijun-recipe-reader.chewmeijun014.workers.de
 const NOTE_PHOTO_MAX = 1600;
 
 const NOTE_ERRORS = {
-  daily_limit: 'The free reading allowance is used up for today. Try again tomorrow, or type this one in.',
+  daily_limit: 'The free reading allowance is used up for today. It resets each afternoon, Singapore time. For now, add the recipe below.',
   too_many_requests: 'That was a lot of notes in a minute. Wait a moment and try again.',
   busy: "The reader is busy right now. Try again in a minute.",
   image_too_large: 'That file is too large to send. Try a smaller photo, or a PDF under 14 MB.',

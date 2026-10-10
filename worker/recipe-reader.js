@@ -19,7 +19,9 @@ const ALLOWED_ORIGINS = [
 ];
 /* Free-tier models, best first. The newest is often busy on the free tier,
    so a busy or rate-limited model hands over to the next. */
-const FREE_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+/* Each free model has its own daily allowance (20 reads a day each, reset
+   at midnight Pacific time), so more models means more reads per day. */
+const FREE_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
 /* The first model gets longest: reading handwriting can take a while. */
 const attemptTimeout = (index) => (index === 0 ? 75000 : 35000);
 const MAX_IMAGE_BYTES = 14 * 1024 * 1024;
@@ -146,6 +148,7 @@ export default {
     const models = [...new Set([env.GEMINI_MODEL, ...FREE_MODELS].filter(Boolean))];
     let response = null;
     let limited = false;
+    let lastStatus = 0;
     for (const [index, model] of models.entries()) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), attemptTimeout(index));
@@ -173,13 +176,17 @@ export default {
       if (response.ok) break;
       const detail = (await response.text()).slice(0, 300);
       console.log('Gemini error', model, response.status, detail);
-      if (response.status === 429) limited = true;
-      /* Busy, limited or unavailable: the next model may still answer. */
-      if (![404, 429, 500, 503, 504].includes(response.status)) break;
+      if (response.status === 429 || /quota|rate limit/i.test(detail)) limited = true;
+      /* Busy, used up, unavailable or refused: the next model may still
+         answer, so try it rather than giving up. */
+      lastStatus = response.status;
       response = null;
     }
 
-    if (!response) return reply(origin, limited ? 429 : 503, { error: limited ? 'daily_limit' : 'busy' });
+    if (!response) {
+      if (limited) return reply(origin, 429, { error: 'daily_limit' });
+      return reply(origin, [500, 502, 503, 504, 0].includes(lastStatus) ? 503 : 502, { error: [500, 502, 503, 504, 0].includes(lastStatus) ? 'busy' : 'reader_failed' });
+    }
     if (!response.ok) return reply(origin, 502, { error: 'reader_failed' });
 
     const raw = extractJson(modelText(await response.json()));
