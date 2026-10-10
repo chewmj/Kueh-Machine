@@ -942,13 +942,13 @@ body.modal-open {
   border-radius: 3px;
 }
 
-/* The row sits on the form's own paper, so its fields read like every
-   other field. The thumbnail stretches to the two fields' combined height. */
+/* A darker cream slip per file, as before; its fields use the same cream
+   as every other field in the form. */
 .media-row {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: var(--paper-card);
+  background: var(--paper);
   border: 1px dashed var(--line);
   border-radius: 2px;
   padding: 0.4rem 0.6rem;
