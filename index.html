@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./style.css?v=202610102045">
+  <link rel="stylesheet" href="./style.css?v=202610102115">
 </head>
 <body>
 
@@ -79,7 +79,7 @@
           </div>
           <button type="button" id="note-fill-cancel" class="note-fill-close" aria-label="Cancel reading the note" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
           <button type="button" id="fill-from-note" class="mini-btn" aria-label="Upload a photo of a handwritten recipe">+ Upload</button>
-          <input type="file" id="note-fill-file" accept="image/*" hidden>
+          <input type="file" id="note-fill-file" accept="image/*,.heic,.heif,application/pdf,.pdf" hidden>
         </div>
         <p class="form-or" id="form-or" hidden><span>or add it below</span></p>
 
@@ -242,7 +242,7 @@
   <!-- Universal Kueh Machine account. Mei Jun's editable recipes and media
        intentionally remain browser-local, as described by the backup UI. -->
   <script src="/shared/account-widget.js" data-accent-color="#b7472a"></script>
-  <script src="./recipes-seed.js?v=202610102045"></script>
-  <script src="./script.js?v=202610102045"></script>
+  <script src="./recipes-seed.js?v=202610102115"></script>
+  <script src="./script.js?v=202610102115"></script>
 </body>
 </html>

@@ -2799,7 +2799,9 @@ const NOTE_ERRORS = {
   daily_limit: 'The free reading allowance is used up for today. Try again tomorrow, or type this one in.',
   too_many_requests: 'That was a lot of notes in a minute. Wait a moment and try again.',
   busy: "The reader is busy right now. Try again in a minute.",
-  image_too_large: 'That photo is too large to send. Try a smaller one.',
+  image_too_large: 'That file is too large to send. Try a smaller photo, or a PDF under 14 MB.',
+  file_too_large: 'That file is too large to send. Try a smaller photo, or a PDF under 14 MB.',
+  unsupported_file: "That file type can't be read. Try a photo (JPG, PNG, HEIC) or a PDF.",
   not_a_recipe: "That photo doesn't look like a recipe. Try a clearer photo of the note.",
   nothing_found: "Couldn't find any ingredients or steps in that photo. Try a clearer, closer photo.",
   timeout: 'Reading the note took too long. Check your connection and try again.',
@@ -2818,6 +2820,46 @@ function setNoteStatus(message, unsure = []) {
 
 /* Photos are shrunk before sending: quicker, and well within the reader's
    limits, while still sharp enough for handwriting. */
+/* Formats the reader takes as they are, when the browser can't open them
+   itself (HEIC in Chrome and Firefox) or they aren't photos (PDF scans). */
+const NOTE_PASSTHROUGH_TYPES = ['image/heic', 'image/heif', 'application/pdf'];
+const NOTE_MAX_UPLOAD_BYTES = 14 * 1024 * 1024;
+
+function noteFileType(file) {
+  const type = (file.type || '').toLowerCase();
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (type === 'application/pdf' || ext === 'pdf') return 'application/pdf';
+  if (type === 'image/heic' || ext === 'heic') return 'image/heic';
+  if (type === 'image/heif' || ext === 'heif') return 'image/heif';
+  return type;
+}
+
+function noteFileError(code) {
+  const err = new Error(code);
+  err.noteCode = code;
+  return err;
+}
+
+/* Gets any upload ready for the reader: photos the browser can open are
+   shrunk to a JPEG (and can join the recipe's photos); HEIC and PDF go as
+   they are. */
+async function prepareNoteFile(file) {
+  const type = noteFileType(file);
+  if (type !== 'application/pdf') {
+    try {
+      const jpeg = await notePhotoAsJpeg(file);
+      if (jpeg) return { blob: jpeg, mimeType: 'image/jpeg', showable: true };
+    } catch {
+      // the browser can't open it; try sending it as it is
+    }
+  }
+  if (NOTE_PASSTHROUGH_TYPES.includes(type)) {
+    if (file.size > NOTE_MAX_UPLOAD_BYTES) throw noteFileError('file_too_large');
+    return { blob: file, mimeType: type, showable: false };
+  }
+  throw noteFileError('unsupported_file');
+}
+
 async function notePhotoAsJpeg(file) {
   let source;
   try {
@@ -2927,7 +2969,8 @@ async function readHandwrittenNote(file) {
   }, 1000);
 
   try {
-    const photo = await notePhotoAsJpeg(file);
+    const prepared = await prepareNoteFile(file);
+    const photo = prepared.blob;
     if (stopped()) return;
     const controller = reading.controller;
     const timer = setTimeout(() => {
@@ -2939,7 +2982,7 @@ async function readHandwrittenNote(file) {
       response = await fetch(RECIPE_READER_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: (await blobToDataURL(photo)).split(',')[1], mimeType: 'image/jpeg' }),
+        body: JSON.stringify({ image: (await blobToDataURL(photo)).split(',')[1], mimeType: prepared.mimeType }),
         signal: controller.signal,
       });
     } finally {
@@ -2982,14 +3025,18 @@ async function readHandwrittenNote(file) {
     }
 
     fillFormFromNote(result);
-    /* The note itself joins the recipe's photos. */
-    currentMedia.push({ id: makeId(), type: 'image', blob: photo, name: 'Handwritten recipe', description: '' });
-    renderExistingMediaPreview();
+    /* The note itself joins the recipe's photos, when it's a photo every
+       browser can show. */
+    if (prepared.showable) {
+      currentMedia.push({ id: makeId(), type: 'image', blob: photo, name: 'Handwritten recipe', description: '' });
+      renderExistingMediaPreview();
+    }
     setNoteStatus('Filled in from the note. Check it over and edit anything before saving.', result.unsure || []);
   } catch (err) {
     if (stopped()) return;
     console.warn('Could not read the note:', err);
-    setNoteStatus(err.name === 'AbortError' ? NOTE_ERRORS.timeout : "Couldn't read the note right now. Try again in a moment, or type it in.");
+    if (err.noteCode) setNoteStatus(NOTE_ERRORS[err.noteCode]);
+    else setNoteStatus(err.name === 'AbortError' ? NOTE_ERRORS.timeout : "Couldn't read the note right now. Try again in a moment, or type it in.");
   } finally {
     clearInterval(slowTimer);
     status.setAttribute('aria-live', 'polite');

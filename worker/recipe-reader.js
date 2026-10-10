@@ -22,11 +22,13 @@ const ALLOWED_ORIGINS = [
 const FREE_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
 /* The first model gets longest: reading handwriting can take a while. */
 const attemptTimeout = (index) => (index === 0 ? 75000 : 35000);
-const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 14 * 1024 * 1024;
+/* What Gemini reads: photos (including iPhone HEIC) and PDF scans. */
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'];
 const RATE_LIMIT = { windowMs: 60 * 1000, requests: 6 };
 const recentRequests = new Map();
 
-const INSTRUCTIONS = `You read handwritten home recipes, usually Chinese (simplified or traditional), written by a mother for her daughter.
+const INSTRUCTIONS = `You read handwritten home recipes, from a photo or a scanned PDF, usually Chinese (simplified or traditional), written by a mother for her daughter.
 
 Return only a JSON object, with no other text, in exactly this shape:
 {
@@ -137,7 +139,8 @@ export default {
       return reply(origin, 400, { error: 'bad_request' });
     }
     const image = typeof body.image === 'string' ? body.image : '';
-    const mimeType = /^image\/(jpeg|png|webp)$/.test(body.mimeType || '') ? body.mimeType : 'image/jpeg';
+    const mimeType = ACCEPTED_TYPES.includes(body.mimeType) ? body.mimeType : null;
+    if (!mimeType) return reply(origin, 415, { error: 'unsupported_file' });
     if (!image || image.length * 0.75 > MAX_IMAGE_BYTES) return reply(origin, 413, { error: 'image_too_large' });
 
     const models = [...new Set([env.GEMINI_MODEL, ...FREE_MODELS].filter(Boolean))];
@@ -155,7 +158,7 @@ export default {
             model,
             system_instruction: INSTRUCTIONS,
             input: [
-              { type: 'image', data: image, mime_type: mimeType },
+              { type: mimeType === 'application/pdf' ? 'document' : 'image', data: image, mime_type: mimeType },
               { type: 'text', text: 'Read this handwritten recipe and return the JSON.' },
             ],
           }),
