@@ -2862,7 +2862,7 @@ async function readHandwrittenNote(file) {
   button.setAttribute('aria-busy', 'true');
   button.replaceChildren(el('span', { class: 'note-spinner', 'aria-hidden': 'true' }), 'Reading…');
   box.classList.add('reading');
-  setNoteStatus("Reading Mum's handwriting… this takes a few seconds.");
+  setNoteStatus("Reading Mum's handwriting… this can take a little while, so hang tight.");
 
   try {
     const photo = await notePhotoAsJpeg(file);
