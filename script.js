@@ -2855,7 +2855,14 @@ function fillFormFromNote(recipe) {
 
 async function readHandwrittenNote(file) {
   const button = document.getElementById('fill-from-note');
+  const box = document.getElementById('note-fill');
+  const idleLabel = button.textContent;
+  /* While reading: the button turns into a small spinner, a line runs
+     along the banner's edge and the camera breathes (see .note-fill.reading). */
   button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
+  button.replaceChildren(el('span', { class: 'note-spinner', 'aria-hidden': 'true' }), 'Reading…');
+  box.classList.add('reading');
   setNoteStatus("Reading Mum's handwriting… this takes a few seconds.");
 
   try {
@@ -2918,6 +2925,9 @@ async function readHandwrittenNote(file) {
     setNoteStatus(err.name === 'AbortError' ? NOTE_ERRORS.timeout : "Couldn't read the note right now. Try again in a moment, or type it in.");
   } finally {
     button.disabled = false;
+    button.removeAttribute('aria-busy');
+    button.textContent = idleLabel;
+    box.classList.remove('reading');
   }
 }
 
