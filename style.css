@@ -404,6 +404,18 @@ body.modal-open {
   color: var(--ink-soft);
 }
 
+/* The pinned "tap ✕" hint on a slow read. */
+.recipe-form .note-fill-hint {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--accent);
+}
+
+.note-fill-hint[hidden] {
+  display: none;
+}
+
 /* What the reader wasn't sure of, on its own line under the result. */
 .note-fill-unsure {
   display: block;

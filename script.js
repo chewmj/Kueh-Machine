@@ -2858,7 +2858,32 @@ function fillFormFromNote(recipe) {
 /* The read in progress, if any: lets the button (or closing the form)
    stop it. */
 let noteReading = null;
-const NOTE_SLOW_AFTER_MS = 45000;
+
+/* While a note is read: the sub line changes with the clock (the reader
+   can't say how far along it is), then loops the later lines every 12s.
+   A hint to skip it appears at 45s and stays. */
+const NOTE_SUBLINES = [
+  { after: 0, text: 'This can take a minute.' },
+  { after: 10, text: 'Still working on it.' },
+  { after: 20, text: 'Making good progress.' },
+  { after: 32, text: 'Every little note counts.' },
+  { after: 45, text: 'Some loops and squiggles take longer.' },
+  { after: 57, text: 'Still reading, not stuck.' },
+  { after: 69, text: 'Good recipes are worth the wait.' },
+  { after: 81, text: 'Still on it. Thanks for your patience.' },
+];
+const NOTE_LOOP_FROM = 93;
+const NOTE_LOOP_LINES = [4, 5, 6, 7];
+const NOTE_LOOP_EVERY = 12;
+const NOTE_HINT_AFTER = 45;
+
+function noteSubline(seconds) {
+  if (seconds >= NOTE_LOOP_FROM) {
+    const step = Math.floor((seconds - NOTE_LOOP_FROM) / NOTE_LOOP_EVERY) % NOTE_LOOP_LINES.length;
+    return NOTE_SUBLINES[NOTE_LOOP_LINES[step]].text;
+  }
+  return NOTE_SUBLINES.filter((line) => seconds >= line.after).pop().text;
+}
 
 function stopNoteReading(reason = 'stopped') {
   if (!noteReading) return;
@@ -2883,11 +2908,23 @@ async function readHandwrittenNote(file) {
   cancel.hidden = false;
   box.classList.add('reading');
   title.textContent = "Reading Mum's handwriting…";
-  setNoteStatus('This can take a minute.');
-  /* If it runs long, suggest skipping it and filling the form in by hand. */
-  const slowTimer = setTimeout(() => {
-    if (noteReading === reading) setNoteStatus("Still reading. If it's taking too long, tap ✕ and add the recipe below.");
-  }, NOTE_SLOW_AFTER_MS);
+  const status = document.getElementById('note-fill-status');
+  const hint = document.getElementById('note-fill-hint');
+  setNoteStatus(noteSubline(0));
+  /* Announce the first line only; the rotation would be noise to a
+     screen reader. The hint has its own live region. */
+  status.setAttribute('aria-live', 'off');
+  const started = Date.now();
+  const slowTimer = setInterval(() => {
+    if (noteReading !== reading) return;
+    const seconds = (Date.now() - started) / 1000;
+    const line = noteSubline(seconds);
+    if (status.textContent !== line) status.textContent = line;
+    if (seconds >= NOTE_HINT_AFTER && hint.hidden) {
+      hint.textContent = "If it's taking too long, tap ✕ and add the recipe below.";
+      hint.hidden = false;
+    }
+  }, 1000);
 
   try {
     const photo = await notePhotoAsJpeg(file);
@@ -2954,7 +2991,10 @@ async function readHandwrittenNote(file) {
     console.warn('Could not read the note:', err);
     setNoteStatus(err.name === 'AbortError' ? NOTE_ERRORS.timeout : "Couldn't read the note right now. Try again in a moment, or type it in.");
   } finally {
-    clearTimeout(slowTimer);
+    clearInterval(slowTimer);
+    status.setAttribute('aria-live', 'polite');
+    hint.hidden = true;
+    hint.textContent = '';
     if (noteReading === reading) noteReading = null;
     if (reading.reason === 'stopped') setNoteStatus('Cancelled. Add the recipe below, or upload the photo again.');
     /* Focus sat on ✕ (or fell to the page when ✕ hid): hand it to Upload,
