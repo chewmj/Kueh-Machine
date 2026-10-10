@@ -2859,22 +2859,22 @@ function fillFormFromNote(recipe) {
    stop it. */
 let noteReading = null;
 
-/* While a note is read: the sub line changes with the clock (the reader
-   can't say how far along it is), then loops the later lines every 12s.
-   A hint to skip it appears at 45s and stays. */
+/* While a note is read: the sub line changes every 7 seconds (the reader
+   can't say how far along it is), then loops the later lines. A hint to
+   skip it appears at 45s and stays. */
 const NOTE_SUBLINES = [
   { after: 0, text: 'This can take a minute.' },
-  { after: 10, text: 'Still working on it.' },
-  { after: 20, text: 'Making good progress.' },
-  { after: 32, text: 'Every little note counts.' },
-  { after: 45, text: 'Some loops and squiggles take longer.' },
-  { after: 57, text: 'Still reading, not stuck.' },
-  { after: 69, text: 'Good recipes are worth the wait.' },
-  { after: 81, text: 'Still on it. Thanks for your patience.' },
+  { after: 7, text: 'Still working on it.' },
+  { after: 14, text: 'Making good progress.' },
+  { after: 21, text: 'Every little note counts.' },
+  { after: 28, text: 'Some loops and squiggles take longer.' },
+  { after: 35, text: 'Still reading, not stuck.' },
+  { after: 42, text: 'Good recipes are worth the wait.' },
+  { after: 49, text: 'Still on it. Thanks for your patience.' },
 ];
-const NOTE_LOOP_FROM = 93;
+const NOTE_LOOP_FROM = 56;
 const NOTE_LOOP_LINES = [4, 5, 6, 7];
-const NOTE_LOOP_EVERY = 12;
+const NOTE_LOOP_EVERY = 7;
 const NOTE_HINT_AFTER = 45;
 
 function noteSubline(seconds) {
