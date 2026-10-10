@@ -2858,6 +2858,7 @@ function fillFormFromNote(recipe) {
 /* The read in progress, if any: lets the button (or closing the form)
    stop it. */
 let noteReading = null;
+const NOTE_SLOW_AFTER_MS = 45000;
 
 function stopNoteReading(reason = 'stopped') {
   if (!noteReading) return;
@@ -2882,6 +2883,10 @@ async function readHandwrittenNote(file) {
     el('span', { class: 'note-stop-label' }, '✕ Stop'));
   box.classList.add('reading');
   setNoteStatus("Reading Mum's handwriting… This can take a minute.");
+  /* If it runs long, suggest skipping it and filling the form in by hand. */
+  const slowTimer = setTimeout(() => {
+    if (noteReading === reading) setNoteStatus("Still reading… If it's taking too long, tap Stop and add the recipe below.");
+  }, NOTE_SLOW_AFTER_MS);
 
   try {
     const photo = await notePhotoAsJpeg(file);
@@ -2948,8 +2953,9 @@ async function readHandwrittenNote(file) {
     console.warn('Could not read the note:', err);
     setNoteStatus(err.name === 'AbortError' ? NOTE_ERRORS.timeout : "Couldn't read the note right now. Try again in a moment, or type it in.");
   } finally {
+    clearTimeout(slowTimer);
     if (noteReading === reading) noteReading = null;
-    if (reading.reason === 'stopped') setNoteStatus('Stopped. Upload the photo again whenever you like.');
+    if (reading.reason === 'stopped') setNoteStatus('Stopped. Add the recipe below, or upload the photo again.');
     button.removeAttribute('aria-busy');
     button.setAttribute('aria-label', 'Upload a photo of a handwritten recipe');
     button.textContent = idleLabel;
