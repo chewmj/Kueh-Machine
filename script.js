@@ -2862,12 +2862,7 @@ async function readHandwrittenNote(file) {
   button.setAttribute('aria-busy', 'true');
   button.replaceChildren(el('span', { class: 'note-spinner', 'aria-hidden': 'true' }), 'Reading…');
   box.classList.add('reading');
-  /* Two lines, with three dots that pulse in turn while it works. */
-  document.getElementById('note-fill-status').replaceChildren(
-    el('span', { class: 'note-reading-line' },
-      "Reading Mum's handwriting",
-      el('span', { class: 'note-dots', 'aria-hidden': 'true' }, el('span', {}, '.'), el('span', {}, '.'), el('span', {}, '.'))),
-    el('span', { class: 'note-reading-sub' }, 'This can take a minute. Feel free to start on the form below.'));
+  setNoteStatus("Reading Mum's handwriting… This can take a minute.");
 
   try {
     const photo = await notePhotoAsJpeg(file);
