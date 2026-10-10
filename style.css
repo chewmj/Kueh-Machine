@@ -2609,6 +2609,16 @@ body.modal-open {
     font-size: 16px;
   }
 
+  /* The help text inside empty fields can be smaller: iOS only zooms on
+     the field's own text size, which stays 16px for what's typed. */
+  .recipe-form input::placeholder,
+  .recipe-form textarea::placeholder,
+  .glossary-search::placeholder,
+  .glossary-add input::placeholder,
+  .edit-input::placeholder {
+    font-size: 14px;
+  }
+
   .form-overlay {
     padding: 0;
   }
