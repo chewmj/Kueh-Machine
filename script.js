@@ -899,6 +899,7 @@ function renderExistingMediaPreview() {
 }
 
 function fillFormForEdit(recipe) {
+  formFilledFromNote = false;
   /* Opening or closing the form ends any read, so a late reply can't fill it. */
   stopNoteReading('closed');
   editingRecipe = recipe;
@@ -2886,7 +2887,11 @@ function formHasContent() {
   return filled('#field-name-en, #field-name-cn, .ing-her, .ing-mine, .step-text');
 }
 
+/* Whether the form's names, ingredients and steps came from an upload. */
+let formFilledFromNote = false;
+
 function fillFormFromNote(recipe) {
+  formFilledFromNote = true;
   if (recipe.nameEn) document.getElementById('field-name-en').value = recipe.nameEn;
   if (recipe.nameCn) document.getElementById('field-name-cn').value = recipe.nameCn;
   document.getElementById('ingredient-rows').innerHTML = '';
@@ -3012,14 +3017,25 @@ async function readHandwrittenNote(file) {
     }
 
     if (formHasContent()) {
-      const ok = await askConfirm({
-        title: 'Replace what’s in the form?',
-        body: 'The names, ingredients and steps from the note will replace what’s there now. The story and photos stay.',
-        confirmLabel: 'Replace',
-        cancelLabel: 'Keep mine',
-      });
+      /* Worded for what's actually in the form: an earlier upload, or
+         something typed in by hand. */
+      const ok = await askConfirm(formFilledFromNote
+        ? {
+          title: 'Replace the previous upload?',
+          body: 'The new note will replace the names, ingredients and steps from your last upload. Your story and photos will stay.',
+          confirmLabel: 'Replace',
+          cancelLabel: 'Keep previous',
+        }
+        : {
+          title: "Replace what's in the form?",
+          body: "The new note will replace the names, ingredients and steps you've added. Your story and photos will stay.",
+          confirmLabel: 'Replace',
+          cancelLabel: 'Keep mine',
+        });
       if (!ok) {
-        setNoteStatus('Kept what you had. The note was read but not used.');
+        setNoteStatus(formFilledFromNote
+          ? 'Kept the previous upload. The new note was read but not used.'
+          : 'Kept what you had. The note was read but not used.');
         return;
       }
     }
