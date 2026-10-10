@@ -266,21 +266,6 @@ a {
   flex-wrap: wrap;
 }
 
-/* The Add button with a small note under it: what visitors add stays in
-   their own browser. */
-.add-recipe-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.4rem;
-}
-
-.add-recipe-note {
-  margin: 0;
-  font-size: 0.78rem;
-  color: var(--ink-soft);
-}
-
 
 /* ---------- Recipe form ---------- */
 
@@ -2667,10 +2652,6 @@ body.modal-open {
 
   .form-pair {
     grid-template-columns: 1fr;
-  }
-
-  .add-recipe-wrap {
-    align-items: flex-start;
   }
 
   .note-fill {
