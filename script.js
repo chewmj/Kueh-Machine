@@ -2857,8 +2857,7 @@ async function readHandwrittenNote(file) {
   const button = document.getElementById('fill-from-note');
   const box = document.getElementById('note-fill');
   const idleLabel = button.textContent;
-  /* While reading: the button turns into a small spinner, a line runs
-     along the banner's edge and the camera breathes (see .note-fill.reading). */
+  /* While reading, the button turns into a small spinner (see .note-fill.reading). */
   button.disabled = true;
   button.setAttribute('aria-busy', 'true');
   button.replaceChildren(el('span', { class: 'note-spinner', 'aria-hidden': 'true' }), 'Reading…');

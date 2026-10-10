@@ -418,39 +418,6 @@ body.modal-open {
 
 /* ---- While a note is being read ---- */
 
-.note-fill {
-  position: relative;
-  overflow: hidden;
-}
-
-/* A thin line gliding along the banner's bottom edge. */
-.note-fill.reading::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 35%;
-  height: 2px;
-  background: var(--accent);
-  border-radius: 999px;
-  animation: note-reading-line 1.4s ease-in-out infinite;
-}
-
-@keyframes note-reading-line {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(290%); }
-}
-
-/* The camera breathes. */
-.note-fill.reading .note-fill-icon {
-  animation: note-reading-breathe 1.2s ease-in-out infinite alternate;
-}
-
-@keyframes note-reading-breathe {
-  from { opacity: 0.45; transform: scale(0.92); }
-  to { opacity: 1; transform: scale(1); }
-}
-
 /* The button keeps its shape and colour, with a small spinner. */
 .note-fill.reading .mini-btn,
 .note-fill.reading .mini-btn:hover {
@@ -473,13 +440,6 @@ body.modal-open {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .note-fill.reading::after {
-    animation: none;
-    width: 100%;
-    opacity: 0.4;
-  }
-
-  .note-fill.reading .note-fill-icon,
   .note-spinner {
     animation: none;
   }
