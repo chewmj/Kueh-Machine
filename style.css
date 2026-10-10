@@ -415,22 +415,18 @@ body.modal-open {
   flex: 0 0 auto;
 }
 
-/* While reading, the button reads "Reading…" and offers "✕ Stop" on
-   hover or keyboard focus; on touch screens a tap simply stops it. */
-.note-stop-label {
-  display: none;
+.note-fill .mini-btn[disabled] {
+  cursor: progress;
 }
 
-.note-fill.reading .mini-btn:hover .note-reading-label,
-.note-fill.reading .mini-btn:focus-visible .note-reading-label,
-.note-fill.reading .mini-btn:hover .note-spinner,
-.note-fill.reading .mini-btn:focus-visible .note-spinner {
-  display: none;
+/* A quiet "Cancel" beside the button while a note is being read. */
+.note-fill .note-fill-cancel {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
 }
 
-.note-fill.reading .mini-btn:hover .note-stop-label,
-.note-fill.reading .mini-btn:focus-visible .note-stop-label {
-  display: inline;
+.note-fill .note-fill-cancel[hidden] {
+  display: none;
 }
 
 /* ---- While a note is being read ---- */
@@ -2566,6 +2562,20 @@ body.modal-open {
 
   .note-fill {
     align-items: flex-start;
+  }
+
+  /* While reading, Cancel and the button move under the message, so the
+     message keeps the full width. */
+  .note-fill.reading {
+    flex-wrap: wrap;
+  }
+
+  .note-fill.reading .note-fill-text {
+    flex: 1 1 calc(100% - 2rem);
+  }
+
+  .note-fill.reading .note-fill-cancel {
+    margin-left: auto;
   }
 
   /* Stacked on phones: one line saying which field is which. */

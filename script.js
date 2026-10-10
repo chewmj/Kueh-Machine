@@ -2873,19 +2873,18 @@ async function readHandwrittenNote(file) {
   const reading = { controller: new AbortController(), reason: '' };
   noteReading = reading;
   const stopped = () => reading.reason === 'stopped' || reading.reason === 'closed';
-  /* While reading, the button shows a spinner and "Reading…", and becomes a
-     Stop button (see .note-fill.reading). */
+  /* While reading, the button shows a spinner and "Reading…", and a quiet
+     Cancel appears beside it. */
+  const cancel = document.getElementById('note-fill-cancel');
+  button.disabled = true;
   button.setAttribute('aria-busy', 'true');
-  button.setAttribute('aria-label', 'Stop reading the note');
-  button.replaceChildren(
-    el('span', { class: 'note-spinner', 'aria-hidden': 'true' }),
-    el('span', { class: 'note-reading-label' }, 'Reading…'),
-    el('span', { class: 'note-stop-label' }, '✕ Stop'));
+  button.replaceChildren(el('span', { class: 'note-spinner', 'aria-hidden': 'true' }), 'Reading…');
+  cancel.hidden = false;
   box.classList.add('reading');
   setNoteStatus("Reading Mum's handwriting… This can take a minute.");
   /* If it runs long, suggest skipping it and filling the form in by hand. */
   const slowTimer = setTimeout(() => {
-    if (noteReading === reading) setNoteStatus("Still reading… If it's taking too long, tap Stop and add the recipe below.");
+    if (noteReading === reading) setNoteStatus("Still reading… If it's taking too long, tap Cancel and add the recipe below.");
   }, NOTE_SLOW_AFTER_MS);
 
   try {
@@ -2955,10 +2954,13 @@ async function readHandwrittenNote(file) {
   } finally {
     clearTimeout(slowTimer);
     if (noteReading === reading) noteReading = null;
-    if (reading.reason === 'stopped') setNoteStatus('Stopped. Add the recipe below, or upload the photo again.');
+    if (reading.reason === 'stopped') setNoteStatus('Cancelled. Add the recipe below, or upload the photo again.');
+    const hadFocus = document.activeElement === cancel;
+    cancel.hidden = true;
+    button.disabled = false;
     button.removeAttribute('aria-busy');
-    button.setAttribute('aria-label', 'Upload a photo of a handwritten recipe');
     button.textContent = idleLabel;
+    if (hadFocus) button.focus();
     box.classList.remove('reading');
   }
 }
@@ -2971,11 +2973,8 @@ function setupNoteFill() {
   box.querySelector('.note-fill-icon').innerHTML = ICON.camera;
   box.hidden = false;
   document.getElementById('form-or').hidden = false;
-  /* While a note is being read, the same button stops it. */
-  button.addEventListener('click', () => {
-    if (noteReading) stopNoteReading('stopped');
-    else input.click();
-  });
+  button.addEventListener('click', () => input.click());
+  document.getElementById('note-fill-cancel').addEventListener('click', () => stopNoteReading('stopped'));
   input.addEventListener('change', () => {
     const file = input.files[0];
     input.value = '';
