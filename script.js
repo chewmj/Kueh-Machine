@@ -2803,6 +2803,15 @@ const NOTE_ERRORS = {
   timeout: 'Reading the note took too long. Check your connection and try again.',
 };
 
+/* What the banner says while a note is being read, by seconds elapsed. */
+const NOTE_WAIT_MESSAGES = [
+  { after: 0, text: "Reading Mum's handwriting… this usually takes 20 to 60 seconds." },
+  { after: 15, text: 'Still reading. Handwriting takes a little longer than print.' },
+  { after: 35, text: 'Making sense of her notes and translating them…' },
+  { after: 60, text: "Almost there. The free reader can be slow when it's busy." },
+  { after: 100, text: 'Taking longer than usual. You can keep waiting, or fill it in below.' },
+];
+
 function setNoteStatus(message, unsure = []) {
   const status = document.getElementById('note-fill-status');
   status.replaceChildren(message);
@@ -2862,7 +2871,20 @@ async function readHandwrittenNote(file) {
   button.setAttribute('aria-busy', 'true');
   button.replaceChildren(el('span', { class: 'note-spinner', 'aria-hidden': 'true' }), 'Reading…');
   box.classList.add('reading');
-  setNoteStatus("Reading Mum's handwriting… this takes a few seconds.");
+  /* The reader can't say how far along it is, so the message moves on with
+     the clock: honest about the wait, reassuring when it runs long. */
+  const started = Date.now();
+  let stage = -1;
+  const showWaitMessage = () => {
+    const seconds = (Date.now() - started) / 1000;
+    const next = NOTE_WAIT_MESSAGES.findLastIndex((m) => seconds >= m.after);
+    if (next !== stage) {
+      stage = next;
+      setNoteStatus(NOTE_WAIT_MESSAGES[next].text);
+    }
+  };
+  showWaitMessage();
+  const waitTimer = setInterval(showWaitMessage, 1000);
 
   try {
     const photo = await notePhotoAsJpeg(file);
@@ -2923,6 +2945,7 @@ async function readHandwrittenNote(file) {
     console.warn('Could not read the note:', err);
     setNoteStatus(err.name === 'AbortError' ? NOTE_ERRORS.timeout : "Couldn't read the note right now. Try again in a moment, or type it in.");
   } finally {
+    clearInterval(waitTimer);
     button.disabled = false;
     button.removeAttribute('aria-busy');
     button.textContent = idleLabel;
