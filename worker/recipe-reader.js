@@ -160,6 +160,9 @@ export default {
           body: JSON.stringify({
             model,
             system_instruction: INSTRUCTIONS,
+            /* Reading a note needs little reasoning; the default thinking
+               more than doubles the wait. 'low' works on every free model. */
+            generation_config: { thinking_level: 'low' },
             input: [
               { type: mimeType === 'application/pdf' ? 'document' : 'image', data: image, mime_type: mimeType },
               { type: 'text', text: 'Read this handwritten recipe and return the JSON.' },
