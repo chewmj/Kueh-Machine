@@ -974,16 +974,84 @@ function fillFormForEdit(recipe) {
   renderExistingMediaPreview();
 }
 
+/* ---------- Drafts ----------
+   Closing the form without saving (tapping outside it, or ✕) keeps what was
+   entered, photos included, and opening it again brings it back. One draft
+   for a new recipe and one per recipe being edited, for this visit. */
+const formDrafts = new Map();
+let formBaseline = '';
+const draftKey = () => (editingRecipe ? editingRecipe.id : 'new');
+
+function readForm() {
+  const value = (id) => document.getElementById(id).value;
+  return {
+    nameEn: value('field-name-en'),
+    nameCn: value('field-name-cn'),
+    story: value('field-story'),
+    ingredients: Array.from(document.querySelectorAll('.ingredient-row-input')).map((row) => ({
+      her: row.querySelector('.ing-her').value,
+      mine: row.querySelector('.ing-mine').value,
+    })),
+    steps: Array.from(document.querySelectorAll('.step-text')).map((input) => input.value),
+    media: currentMedia.map((m) => ({ ...m })),
+    fromNote: formFilledFromNote,
+  };
+}
+
+/* What counts as a change: the words, and which files are attached with
+   what names. Empty rows don't count. */
+function formFingerprint(state) {
+  return JSON.stringify({
+    names: [state.nameEn.trim(), state.nameCn.trim(), state.story.trim()],
+    ingredients: state.ingredients.map((r) => [r.her.trim(), r.mine.trim()]).filter(([h, m]) => h || m),
+    steps: state.steps.map((t) => t.trim()).filter(Boolean),
+    media: state.media.map((m) => [m.id, m.name || '', m.description || '']),
+  });
+}
+
+function applyDraft(draft) {
+  document.getElementById('field-name-en').value = draft.nameEn;
+  document.getElementById('field-name-cn').value = draft.nameCn;
+  document.getElementById('field-story').value = draft.story;
+  document.getElementById('ingredient-rows').innerHTML = '';
+  document.getElementById('step-rows').innerHTML = '';
+  (draft.ingredients.length ? draft.ingredients : [{ her: '', mine: '' }]).forEach((row) => addIngredientRow(row.her, row.mine));
+  (draft.steps.length ? draft.steps : ['']).forEach((step) => addStepRow(step));
+  currentMedia = draft.media.map((m) => ({ ...m }));
+  formFilledFromNote = draft.fromNote;
+  renderExistingMediaPreview();
+}
+
 function openRecipeForm(recipe = null) {
   fillFormForEdit(recipe);
+  formBaseline = formFingerprint(readForm());
+  const draft = formDrafts.get(draftKey());
+  if (draft) applyDraft(draft);
+  document.getElementById('draft-note').hidden = !draft;
   document.getElementById('recipe-form-overlay').classList.remove('hidden');
   document.body.classList.add('modal-open');
 }
 
-function closeRecipeForm() {
+function closeRecipeForm({ saved = false } = {}) {
+  const key = draftKey();
+  const state = readForm();
+  if (saved || formFingerprint(state) === formBaseline) {
+    formDrafts.delete(key);
+  } else {
+    formDrafts.set(key, state);
+    showToast(editingRecipe ? 'Changes kept as a draft. Edit the recipe again to carry on.' : 'Draft kept. Tap + Add a recipe to carry on.');
+  }
   document.getElementById('recipe-form-overlay').classList.add('hidden');
   document.body.classList.remove('modal-open');
   fillFormForEdit(null);
+}
+
+function discardDraft() {
+  formDrafts.delete(draftKey());
+  fillFormForEdit(editingRecipe);
+  formBaseline = formFingerprint(readForm());
+  document.getElementById('draft-note').hidden = true;
+  document.getElementById('field-name-en').focus({ preventScroll: true });
 }
 
 /* Saving without an English name: mark the field and say what's needed, the
@@ -1052,7 +1120,7 @@ async function handleRecipeSubmit(e) {
   };
 
   await dbPut('recipes', recipe);
-  closeRecipeForm();
+  closeRecipeForm({ saved: true });
   renderRecipes();
 }
 
@@ -1136,10 +1204,11 @@ function setupReordering() {
 
 function setupRecipeForm() {
   document.getElementById('open-recipe-form').addEventListener('click', () => openRecipeForm());
-  document.getElementById('close-recipe-form').addEventListener('click', closeRecipeForm);
+  document.getElementById('close-recipe-form').addEventListener('click', () => closeRecipeForm());
   document.getElementById('recipe-form-overlay').addEventListener('click', (e) => {
     if (e.target.id === 'recipe-form-overlay') closeRecipeForm();
   });
+  document.getElementById('draft-discard').addEventListener('click', discardDraft);
 
   document.getElementById('field-name-en').addEventListener('input', (e) => {
     if (e.target.value.trim()) clearDishNameError();

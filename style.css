@@ -304,6 +304,28 @@ body.modal-open {
   margin-top: 0;
 }
 
+/* Shown when the form reopens with an unsaved draft. */
+.recipe-form .draft-note {
+  margin: -0.4rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.recipe-form .draft-note[hidden] {
+  display: none;
+}
+
+.draft-discard {
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
 .recipe-form label {
   display: block;
   font-size: 0.9rem;
