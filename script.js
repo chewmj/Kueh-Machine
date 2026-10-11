@@ -992,7 +992,7 @@ function showDishNameError() {
   const field = document.getElementById('field-name-en');
   const error = document.getElementById('field-name-en-error');
   field.setAttribute('aria-invalid', 'true');
-  error.textContent = 'Add a name for the dish, e.g. Yam Cake.';
+  error.textContent = 'Add a name for the dish.';
   error.hidden = false;
   field.focus({ preventScroll: true });
   field.scrollIntoView({ block: 'center', behavior: 'smooth' });
