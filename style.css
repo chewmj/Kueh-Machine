@@ -319,14 +319,14 @@ body.modal-open {
    handwritten label, like a note pencilled on the card. */
 .draft-badge {
   display: inline-block;
-  margin-left: 0.2rem;
-  padding: 0 0.35rem;
+  margin-left: 0.25rem;
+  padding: 0.05rem 0.3rem 0;
   border: 1px dashed var(--accent);
-  border-radius: 3px;
+  border-radius: 2px;
   font-family: var(--font-hand);
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   font-weight: 400;
-  line-height: 1.25;
+  line-height: 1.1;
   color: var(--accent);
   vertical-align: middle;
   transform: rotate(-3deg);
