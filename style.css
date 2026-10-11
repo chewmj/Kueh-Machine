@@ -434,7 +434,8 @@ body.modal-open {
 
 .note-fill.tall .mini-btn {
   align-self: flex-start;
-  margin-top: -0.25rem;
+  /* The same space above it as when it's centred on two lines. */
+  margin-top: 0.21rem;
 }
 
 .note-fill .mini-btn[disabled] {
@@ -503,7 +504,7 @@ body.modal-open {
 
 .note-fill.tall .note-fill-close {
   align-self: flex-start;
-  margin-top: -0.38rem;
+  margin-top: 0.3rem;
 }
 
 .note-fill-close[hidden] {
