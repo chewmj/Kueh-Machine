@@ -2392,11 +2392,15 @@ function ingredientRows(recipe) {
 /* A draft can be saved before it has a name. */
 const dishName = (recipe) => recipe.nameEn || 'Untitled recipe';
 
-/* "Orh Kueh / Yam Cake" with the Chinese name in its smaller span, and a
-   "Draft" label on a recipe that hasn't been saved properly yet. */
+/* "Orh Kueh / Yam Cake" with the Chinese name in its smaller span. */
 function dishHeading(tag, recipe, attrs = {}) {
-  return el(tag, attrs, dishName(recipe), recipe.nameCn ? [' ', el('span', { class: 'cn' }, recipe.nameCn)] : null,
-    recipe.draft ? [' ', el('span', { class: 'draft-badge' }, 'Draft')] : null);
+  return el(tag, attrs, dishName(recipe), recipe.nameCn ? [' ', el('span', { class: 'cn' }, recipe.nameCn)] : null);
+}
+
+/* A "Draft" label above the name of a recipe that hasn't been saved
+   properly yet. */
+function draftLabel(recipe) {
+  return recipe.draft ? el('p', { class: 'draft-line' }, el('span', { class: 'draft-badge' }, 'Draft')) : null;
 }
 
 /* ---------- Recipe cards (preview) ---------- */
@@ -2479,6 +2483,7 @@ async function buildRecipeCard(recipe, index, total) {
       el('button', { type: 'button', class: 'share-recipe', 'aria-label': 'Share recipe' }, icon('share')),
       el('button', { type: 'button', class: 'edit-recipe', 'aria-label': 'Edit recipe' }, icon('edit')),
       el('button', { type: 'button', class: 'delete-recipe', 'aria-label': 'Delete recipe' }, icon('trash'))),
+    draftLabel(recipe),
     dishHeading('h3', recipe),
     recipe.story ? el('p', { class: 'recipe-story' }, recipe.story) : null,
     coverNode,
@@ -2530,6 +2535,7 @@ async function openRecipeDetail(recipe) {
 
   const parts = [
     el('button', { type: 'button', id: 'close-recipe-detail', class: 'close-btn', 'aria-label': 'Close' }, '×'),
+    draftLabel(recipe),
     dishHeading('h3', recipe, { id: 'recipe-detail-heading' }),
     recipe.story ? el('p', { class: 'recipe-story' }, recipe.story) : null,
     visual.length ? el('div', { class: 'detail-gallery' }, galleryTiles) : null,

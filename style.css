@@ -315,11 +315,15 @@ body.modal-open {
   display: none;
 }
 
-/* "Draft" beside a recipe's name until it's saved properly: a small
+/* "Draft" above a recipe's name until it's saved properly: a small
    handwritten label, like a note pencilled on the card. */
+.draft-line {
+  margin: 0 0 0.35rem;
+  line-height: 1;
+}
+
 .draft-badge {
   display: inline-block;
-  margin-left: 0.25rem;
   padding: 0.05rem 0.3rem 0;
   border: 1px dashed var(--accent);
   border-radius: 2px;
@@ -328,7 +332,6 @@ body.modal-open {
   font-weight: 400;
   line-height: 1.1;
   color: var(--accent);
-  vertical-align: middle;
   transform: rotate(-3deg);
 }
 
