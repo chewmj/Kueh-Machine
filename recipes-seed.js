@@ -204,6 +204,10 @@ const SEED_RECIPES = [
       {
         "her": "花生油 1.5 litre",
         "mine": "Peanut oil 1.5 litres"
+      },
+      {
+        "her": "芝麻1包",
+        "mine": "Sesame seeds 100g"
       }
     ],
     "steps": [
@@ -211,6 +215,7 @@ const SEED_RECIPES = [
       "Pour the cooking oil into the wok and dip the iron honeycomb moulds. Turn on the stove to heat up the iron mould",
       "When the oil is hot enough, dip the mould into the batter, only up to its top edge, not the whole thing",
       "Allow the batter to stick to the mould and fry it in hot oil. Shake lightly for the batter to come off the mould",
+      "Add sesame seeds into the hot oil for extra flavour",
       "Flip the honeycomb and fry till golden brown"
     ],
     "order": 1,
