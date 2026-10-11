@@ -12,19 +12,19 @@ const SEED_RECIPES = [
     "id": "84fbd0dc-0e81-40d0-8868-4ce6e717020a",
     "nameEn": "Orh Kueh / Yam Cake",
     "nameCn": "芋头糕",
-    "story": "Orh Kueh! Aka Yam Cake/芋头糕 is one of my favourite home made food by my mum! Whenever there is a gathering with my extended family, she will prepare this dish! Taste super delicious when freshly made or lightly fried with egg batter is the best way to have it! 😋",
+    "story": "Orh Kueh! aka Yam Cake/芋头糕, one of my favourite home-made dishes by my mum! Whenever there is a gathering with my extended family, she will prepare this dish! It tastes super delicious freshly made, but lightly fried in egg batter is the best way to have it! 😋",
     "ingredients": [
       {
         "her": "芋头一颗",
-        "mine": "Yam - 800g"
+        "mine": "Yam 800g"
       },
       {
         "her": "虾米 80g",
-        "mine": "Shrimp - 80g"
+        "mine": "Dried shrimp 80g"
       },
       {
         "her": "冬菇八朵",
-        "mine": "8 Dried Mushrooms"
+        "mine": "8 dried mushrooms"
       },
       {
         "her": "腊肠两条",
@@ -44,11 +44,11 @@ const SEED_RECIPES = [
       },
       {
         "her": "1.5L 开水",
-        "mine": "1.5 L Water"
+        "mine": "1.5L boiling water"
       },
       {
         "her": "3 茶匙盐",
-        "mine": "3 teaspoons salt"
+        "mine": "3 tsp salt"
       },
       {
         "her": "胡椒粉少许",
@@ -56,19 +56,19 @@ const SEED_RECIPES = [
       },
       {
         "her": "麻油一汤匙",
-        "mine": "1 table spoon Sesame oil"
+        "mine": "1 tbsp sesame oil"
       }
     ],
     "steps": [
-      "Soak dried mushrooms in water for an hour to soften it",
-      "Dice all the ingredients into cubes (Yam, mushrooms, cured sausage and shrimps)",
+      "Soak dried mushrooms in water for an hour to soften them",
+      "Dice all the ingredients into cubes (yam, mushrooms, cured sausage and shrimp)",
       "Chop and fry shallots in 3 tablespoons of cooking oil",
-      "Set aside the shallots and stir-fry the ingredients individually (Yam first, shrimp, mushroom, cured sausage)",
+      "Set aside the shallots and stir-fry the ingredients individually (yam first, then shrimp, mushroom, cured sausage)",
       "In a big bowl, add rice flour, tapioca flour and water to mix well, add salt, pepper, sesame oil",
-      "Add all ingredients to the flour/water mixture into big wok",
+      "Add the fried ingredients and the flour mixture to a big wok",
       "Cook the mixture over low heat until it thickens",
       "Oil the metal tray",
-      "Pour the mixture into metal tray and steam for 45mins"
+      "Pour the mixture into the metal tray and steam for 45 minutes"
     ],
     "order": 0,
     "createdAt": 1785209869544,
@@ -109,7 +109,7 @@ const SEED_RECIPES = [
         "thumb": "./media/thumbs/orh-kueh-yam-cake-5.jpg",
         "id": "orh-kueh-yam-cake-5",
         "type": "image",
-        "name": "Mixing of flour mixtures and ingredients",
+        "name": "Mixing the flour mixture and ingredients",
         "description": "",
         "src": "./media/orh-kueh-yam-cake-5.jpg"
       },
@@ -166,7 +166,7 @@ const SEED_RECIPES = [
     "id": "1c4e528c-d621-4ed0-8a29-f4e21f8166b2",
     "nameEn": "Fried Honeycomb",
     "nameCn": "炸蜂窝",
-    "story": "During chinese new year, it's a tradition that my mum would make this new year goodies for our relative and friends! Always my cousin's favourite CNY snacks!",
+    "story": "During Chinese New Year, it's a tradition for my mum to make these New Year goodies for our relatives and friends! Always my cousin's favourite CNY snack!",
     "ingredients": [
       {
         "her": "粘米粉 300g",
@@ -194,15 +194,15 @@ const SEED_RECIPES = [
       },
       {
         "her": "花生油 1.5 litre",
-        "mine": "1.5 litre Peanut cooking oil"
+        "mine": "Peanut oil 1.5 litres"
       }
     ],
     "steps": [
       "Add all ingredients (rice flour, eggs, coconut milk, pandan leaf juice, sugar and salt) into a big bowl and mix well",
       "Pour the cooking oil into the wok and dip the iron honeycomb moulds. Turn on the stove to heat up the iron mould",
-      "Wait till the oil is hot enough, dip the honeycomb mould into the batter. (Note just dip to the height of the mould, not the entire thing)",
+      "When the oil is hot enough, dip the mould into the batter, only up to its top edge, not the whole thing",
       "Allow the batter to stick to the mould and fry it in hot oil. Shake lightly for the batter to come off the mould",
-      "Flip the honeycomb and fried till golden brown"
+      "Flip the honeycomb and fry till golden brown"
     ],
     "order": 1,
     "createdAt": 1787502951009,
@@ -219,7 +219,7 @@ const SEED_RECIPES = [
         "thumb": "./media/thumbs/fried-honeycomb-2.jpg",
         "id": "fried-honeycomb-2",
         "type": "image",
-        "name": "Ingredients: Egg, pandan extract, flour",
+        "name": "Ingredients: egg, pandan extract, flour",
         "description": "",
         "src": "./media/fried-honeycomb-2.jpg"
       },
@@ -251,7 +251,7 @@ const SEED_RECIPES = [
         "thumb": "./media/thumbs/fried-honeycomb-6.jpg",
         "id": "fried-honeycomb-6",
         "type": "image",
-        "name": "Hand written recipe by my mum",
+        "name": "Handwritten recipe by my mum",
         "description": "",
         "src": "./media/fried-honeycomb-6.jpg"
       },
@@ -268,7 +268,7 @@ const SEED_RECIPES = [
     "id": "ec237f37-2ac9-42b7-9fb2-f62f376ff313",
     "nameEn": "Hainanese Yi Bua Kueh (Coconut Palm Sugar Steamed Cake)",
     "nameCn": "薏粑",
-    "story": "Yi bua (薏粑) is my mum's favourite childhood kueh! It is a Hainanese kueh made with glutinous rice flour dough and filled with mixture of grated coconut, gula Melaka, toasted peanuts, toasted sesame seeds, and grated ginger. The dough has a mochi-like texture, soft and chewy.",
+    "story": "Yi bua (薏粑) is my mum's favourite childhood kueh! It is a Hainanese kueh made with glutinous rice flour dough and filled with a mixture of grated coconut, gula melaka, ground peanuts, toasted sesame seeds and dried orange peel. The dough has a mochi-like texture, soft and chewy.",
     "ingredients": [
       {
         "her": "香蕉叶",
@@ -296,19 +296,19 @@ const SEED_RECIPES = [
       },
       {
         "her": "椰糖一粒",
-        "mine": "Gula melaka (Palm sugar) 70g"
+        "mine": "Gula melaka (palm sugar) 70g"
       },
       {
         "her": "芝麻 20g",
-        "mine": "Sesame 20g"
+        "mine": "Sesame seeds 20g"
       },
       {
         "her": "花生 20g",
-        "mine": "Ground Peanut 20g"
+        "mine": "Ground peanuts 20g"
       },
       {
         "her": "椰子一粒",
-        "mine": "1 Grated coconut"
+        "mine": "1 coconut, grated"
       },
       {
         "her": "橙皮少许剪小粒",
@@ -316,16 +316,16 @@ const SEED_RECIPES = [
       }
     ],
     "steps": [
-      "Cut banana leaf into 6inch in length and 2.5 inch in width",
+      "Cut the banana leaves into pieces 6 inches long and 2.5 inches wide",
       "For dough: Add glutinous rice flour, tapioca flour, 250ml water and 2 tbsp oil into a metal bowl and knead into dough",
-      "For fillings: Break palm sugar into smaller pieces, add 4 tbsp water into a pot cook and melt it",
-      "Add in pandan leaves into melted palm sugar and cook to extract pandan flavour.",
-      "Remove pandan leaves, add in grated coconut continue to cook and mix well with melted palm sugar",
+      "For fillings: Break the palm sugar into small pieces and melt it in a pot with 4 tbsp water",
+      "Add in pandan leaves into melted palm sugar and cook to extract pandan flavour",
+      "Remove the pandan leaves, add the grated coconut, and keep cooking until it's mixed well with the melted palm sugar",
       "Remove mixture from heat and add in ground peanuts, sesame and dried orange peels. Mix well",
-      "Divide the dough into smaller pieces (roughly about 40g per piece)",
+      "Divide the dough into smaller pieces (about 40g each)",
       "Press the dough flat and wrap with 2 tbsp of filling",
       "Wrap the filled dough with banana leaf",
-      "Steam for 10mins and it's ready!"
+      "Steam for 10 minutes and it's ready!"
     ],
     "order": 2,
     "createdAt": 1785230804163,
@@ -335,7 +335,7 @@ const SEED_RECIPES = [
         "id": "hainanese-yi-bua-kueh-co-1",
         "type": "image",
         "name": "Yi Bua!",
-        "description": "The finish product here!",
+        "description": "The finished product!",
         "src": "./media/hainanese-yi-bua-kueh-co-1.jpg"
       },
       {
@@ -367,11 +367,15 @@ const SEED_RECIPES = [
     "id": "bce4bd31-c5af-41a6-aa0e-8002fe869502",
     "nameEn": "Tang Yuan / Glutinous Rice Ball",
     "nameCn": "汤圆",
-    "story": "During 冬至, winter solstice or 元宵节, during the Chinese New Year period, my mum will always make tang yuan for the family to signify 一家团圆, family reunion.",
+    "story": "During 冬至 (the winter solstice) or 元宵节 (the Lantern Festival, which ends Chinese New Year), my mum always makes tang yuan for the family, to signify 一家团圆, family reunion.",
     "ingredients": [
       {
         "her": "糯米粉 300gm",
         "mine": "Glutinous rice flour 300g"
+      },
+      {
+        "her": "200ml 水",
+        "mine": "Water 200ml (for the dough)"
       },
       {
         "her": "水 1,000gm",
@@ -466,7 +470,7 @@ const SEED_RECIPES = [
 const SEED_GLOSSARY = [
   {
     "term": "两块钱小辣椒",
-    "meaning": "$2 worth of chili padi (~150g, a small bag)"
+    "meaning": "$2 worth of chilli padi (~150g, a small bag)"
   },
   {
     "term": "两块姜",
@@ -474,11 +478,11 @@ const SEED_GLOSSARY = [
   },
   {
     "term": "一把",
-    "meaning": "a handful  ~30g"
+    "meaning": "a handful, ~30g"
   },
   {
     "term": "少许",
-    "meaning": "a little  ~1/4 tsp"
+    "meaning": "a little, ~1/4 tsp"
   },
   {
     "term": "一大汤匙",
@@ -486,6 +490,6 @@ const SEED_GLOSSARY = [
   },
   {
     "term": "一点点",
-    "meaning": "1/2 tbsp"
+    "meaning": "a tiny bit, ~1/2 tbsp"
   }
 ];

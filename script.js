@@ -509,6 +509,7 @@ const PAST_SEED_GLOSSARY = [
   ['一把', 'a handful  ~30g'],
   ['一把 (a handful)', '~30g'],
   ['一点点', '1/2 tbsp'],
+  ['两块钱小辣椒', '$2 worth of chili padi (~150g, a small bag)'],
   ['一粒椰糖', '1 block of Palm sugar (100g)'],
   ['两块钱姜', '$2 worth of ginger, a thumb-sized knob, ~15g'],
   ['少许', 'a little  ~1/4 tsp'],
@@ -1699,7 +1700,7 @@ function recipeText(recipe) {
     lines.push('', 'Steps:');
     recipe.steps.forEach((step, i) => lines.push(`${i + 1}. ${step}`));
   }
-  lines.push('', 'From 家常菜 · Taste of Home — kuehmachine.com');
+  lines.push('', 'From 家常菜 · Taste of Home, by Mei Jun · kuehmachine.com');
   return lines.join('\n');
 }
 
@@ -3036,7 +3037,7 @@ async function readHandwrittenNote(file) {
     }
     const errorCode = reply && typeof reply.error === 'string' ? reply.error : '';
     if (!response.ok || errorCode) {
-      setNoteStatus(NOTE_ERRORS[errorCode] || "Couldn't read the note right now. Try again in a moment, or type it in.");
+      setNoteStatus(NOTE_ERRORS[errorCode] || "Couldn't read the note right now. Try again in a moment, or add the recipe below.");
       return;
     }
     const result = cleanNoteResult(reply);
@@ -3081,7 +3082,7 @@ async function readHandwrittenNote(file) {
     if (stopped()) return;
     console.warn('Could not read the note:', err);
     if (err.noteCode) setNoteStatus(NOTE_ERRORS[err.noteCode]);
-    else setNoteStatus(err.name === 'AbortError' ? NOTE_ERRORS.timeout : "Couldn't read the note right now. Try again in a moment, or type it in.");
+    else setNoteStatus(err.name === 'AbortError' ? NOTE_ERRORS.timeout : "Couldn't read the note right now. Try again in a moment, or add the recipe below.");
   } finally {
     clearInterval(slowTimer);
     status.setAttribute('aria-live', 'polite');

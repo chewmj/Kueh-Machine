@@ -30,7 +30,7 @@ living only in one browser:
 - **Orh Kueh / Yam Cake** 芋头糕 — the one she makes for family gatherings
 - **Fried Honeycomb** 炸蜂窝 — Chinese New Year goodies for relatives and friends
 - **Hainanese Yi Bua Kueh** 薏粑 — coconut palm sugar steamed cake
-- **Tang Yuan / Glutinous Rice Balls** 汤圆
+- **Tang Yuan / Glutinous Rice Ball** 汤圆
 
 Each has its photos and handwritten recipe, and a voice recording of mum
 explaining it; Orh Kueh, Fried Honeycomb and Tang Yuan also have short videos.
@@ -95,7 +95,7 @@ old version for days.
 - [x] Share panel with a preview of the recipe card: share it as a one-page
       PDF (story, photo strip, ingredients, steps, and a tappable link back to
       kuehmachine.com/meijun) with a short message, download the card as an
-      image, or save the recipe as a PDF laid out for paper
+      image, or save the same card as a PDF
 - [x] Each recipe has its own address (`#recipe=…`) that opens it directly
 - [x] Add photos/videos to a recipe's gallery without overwriting what's
       already there — remove individual items instead
