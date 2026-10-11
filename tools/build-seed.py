@@ -165,6 +165,11 @@ def main():
         sys.exit('That file does not look like a Taste of Home backup.')
 
     recipes = sorted(data['recipes'], key=lambda r: r.get('order', 0))
+    # Drafts stay in the browser they were started in until they're saved.
+    for r in recipes:
+        if r.get('draft'):
+            print(f"  - Leaving out the draft \"{r.get('nameEn') or 'Untitled recipe'}\"")
+    recipes = [r for r in recipes if not r.get('draft')]
 
     # Read everything before clearing the media folder, since built-in files
     # missing from the backup are taken from it.
