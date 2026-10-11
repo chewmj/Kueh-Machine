@@ -243,8 +243,8 @@ const SEED_RECIPES = [
         "poster": "./media/fried-honeycomb-3-poster.jpg",
         "id": "fried-honeycomb-3",
         "type": "video",
-        "name": "Frying in progress",
-        "description": "",
+        "name": "Metal mould dip in batter",
+        "description": "Allow the batter to stick to the mould and fry it in hot oil.",
         "src": "./media/fried-honeycomb-3.mp4"
       },
       {
@@ -259,7 +259,7 @@ const SEED_RECIPES = [
         "poster": "./media/fried-honeycomb-5-poster.jpg",
         "id": "fried-honeycomb-5",
         "type": "video",
-        "name": "Frying in progress",
+        "name": "Flipping the honeycomb",
         "description": "",
         "src": "./media/fried-honeycomb-5.mp4"
       },
@@ -267,7 +267,7 @@ const SEED_RECIPES = [
         "poster": "./media/fried-honeycomb-6-poster.jpg",
         "id": "fried-honeycomb-6",
         "type": "video",
-        "name": "Mum teaching papa on the tips for making fried honeycomb",
+        "name": "Mum and Papa working together",
         "description": "",
         "src": "./media/fried-honeycomb-6.mp4"
       },

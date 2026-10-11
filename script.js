@@ -2231,11 +2231,13 @@ async function mediaNode(item, alt, { playable = false, large = false } = {}) {
       return el('video', { src: mediaSrc(item), controls: true, playsinline: true, preload: 'metadata' });
     }
 
-    /* Built-in videos ship with a poster; don't download and decode the
-       whole video just to make a card-sized still. (From Leonard.) */
+    /* The same still as the recipe form: a frame from the video this
+       browser holds, if it holds one. Otherwise the poster built-in videos
+       ship with (taken from the same moment), so the whole video isn't
+       downloaded just to make a card-sized still. (Poster from Leonard.) */
     const poster = safeMediaUrl(item.poster);
-    const frame = poster ? null : await thumbBlobFor(item);
-    const still = poster || (frame ? mediaUrl(frame) : null);
+    const frame = item.blob ? await thumbBlobFor(item) : null;
+    const still = frame ? mediaUrl(frame) : poster;
     const inner = still
       ? fallBackToHeldCopy(el('img', { src: still, alt, loading: 'lazy', decoding: 'async' }), item)
       : el('video', { src: mediaSrc(item), muted: true, playsinline: true, preload: 'metadata' });

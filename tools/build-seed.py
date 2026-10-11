@@ -38,7 +38,16 @@ AUDIO_EXT = {
 
 
 def make_poster(video_path, out_name):
-    """Grab a still from a video with Quick Look, so cards have something to show."""
+    """A still for the cards: the frame 1 second in, the same one the page
+    takes for its own stills, so the gallery and the recipe form match.
+    Falls back to Quick Look's choice of frame if Swift isn't available."""
+    try:
+        subprocess.run(['swift', os.path.join(ROOT, 'tools', 'video-still.swift'), video_path, '1',
+                        os.path.join(MEDIA_DIR, out_name)],
+                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return out_name
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
     tmp_dir = os.path.join(MEDIA_DIR, '.posters')
     os.makedirs(tmp_dir, exist_ok=True)
     try:
