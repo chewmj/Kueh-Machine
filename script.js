@@ -795,12 +795,12 @@ function addIngredientRow(her = '', mine = '') {
   row.innerHTML = `
     <button type="button" class="drag-handle" aria-label="Drag to reorder, or use the arrow keys">⠿</button>
     <span class="field-with-mic field-her">
-      <input type="text" class="ing-her" placeholder="e.g. 一把姜" aria-label="Her words">
+      <input type="text" class="ing-her" placeholder="e.g. 少许糖" aria-label="Her words">
       <button type="button" class="mic-btn" data-lang="zh-CN" aria-label="Record her words with voice">${ICON.mic}</button>
     </span>
     <span class="ing-arrow" aria-hidden="true">→</span>
     <span class="field-with-mic field-mine">
-      <input type="text" class="ing-mine" placeholder="e.g. ~30g" aria-label="Your translation">
+      <input type="text" class="ing-mine" placeholder="e.g. ~1/4 tsp sugar" aria-label="Your translation">
       <button type="button" class="mic-btn" data-lang="en-SG" aria-label="Record your translation with voice">${ICON.mic}</button>
     </span>
     <button type="button" class="remove-row" aria-label="Remove">${ICON.trash}</button>
