@@ -1077,6 +1077,28 @@ body.modal-open {
   --media-field-gap: 0.2rem;
 }
 
+/* Rows just added through "+ Add files" glow briefly in the accent. */
+.media-row.just-added {
+  animation: media-added 1.8s ease-out;
+}
+
+@keyframes media-added {
+  0%, 35% {
+    background: rgba(183, 71, 42, 0.08);
+    border-color: var(--accent);
+  }
+  100% {
+    background: var(--paper);
+    border-color: var(--line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-row.just-added {
+    animation-duration: 0.01s;
+  }
+}
+
 .media-row .media-thumb {
   flex: 0 0 auto;
   display: flex;
@@ -2593,6 +2615,11 @@ body.modal-open {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
   z-index: 200;
   transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* While the recipe form is open, sit above its Save bar instead of on it. */
+body:has(#recipe-form-overlay:not(.hidden)) .toast {
+  bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
 }
 
 .toast.hidden {

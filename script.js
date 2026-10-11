@@ -829,6 +829,40 @@ function addStepRow(text = '') {
 let editingRecipe = null;
 let currentMedia = [];
 
+const MEDIA_WORDS = {
+  image: ['photo', 'photos'],
+  video: ['video', 'videos'],
+  audio: ['voice recording', 'voice recordings'],
+};
+
+/* "Photo added", "Voice recording added", "2 photos and 1 video added". */
+function mediaAddedMessage(items) {
+  const counts = ['image', 'video', 'audio']
+    .map((type) => [type, items.filter((m) => m.type === type).length])
+    .filter(([, n]) => n);
+  if (items.length === 1) {
+    const word = MEDIA_WORDS[items[0].type][0];
+    return `${word[0].toUpperCase()}${word.slice(1)} added`;
+  }
+  const parts = counts.map(([type, n]) => `${n} ${MEDIA_WORDS[type][n === 1 ? 0 : 1]}`);
+  const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0];
+  return `${list} added`;
+}
+
+/* A brief warm glow on the rows just added, brought into view, so it's
+   clear where they landed in the list. */
+function markNewMediaRows(ids) {
+  const rows = ids
+    .map((id) => document.querySelector(`#existing-media-preview .media-row[data-media-id="${CSS.escape(id)}"]`))
+    .filter(Boolean);
+  rows.forEach((row) => {
+    row.classList.add('just-added');
+    row.addEventListener('animationend', () => row.classList.remove('just-added'), { once: true });
+  });
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  rows.at(-1)?.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+}
+
 function renderExistingMediaPreview() {
   const container = document.getElementById('existing-media-preview');
   if (!currentMedia.length) {
@@ -1116,16 +1150,19 @@ function setupRecipeForm() {
 
   document.getElementById('field-media').addEventListener('change', (e) => {
     const files = Array.from(e.target.files);
-    files.forEach((file) => {
-      currentMedia.push({
-        id: makeId(),
-        type: mediaTypeOf(file),
-        blob: file,
-        name: file.name,
-      });
-    });
+    const added = files.map((file) => ({
+      id: makeId(),
+      type: mediaTypeOf(file),
+      blob: file,
+      name: file.name,
+    }));
+    currentMedia.push(...added);
     e.target.value = '';
     renderExistingMediaPreview();
+    if (added.length) {
+      showToast(mediaAddedMessage(added));
+      markNewMediaRows(added.map((m) => m.id));
+    }
   });
 
   document.getElementById('recipe-form').addEventListener('click', (e) => {
