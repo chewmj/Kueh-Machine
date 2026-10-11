@@ -311,14 +311,16 @@ async function mediaBlob(item) {
 
 /* After the page is up, quietly pull built-in media into the browser, one
    file at a time, so sharing has files to attach and photos get thumbnails
-   on the next visit. Nothing waits on this. */
+   on the next visit. Nothing waits on this. Videos are left out: they're
+   most of the folder's weight, play straight from ./media/, and backup and
+   share fetch any file they need when they need it. */
 async function fetchSeedMediaInBackground() {
   if (!canFetchLocalFiles()) return;
   const recipes = await dbGetAll('recipes');
 
   for (const { id } of recipes) {
     const recipe = await dbGet('recipes', id);
-    const missing = (recipe?.media || []).filter((m) => !m.blob && m.src);
+    const missing = (recipe?.media || []).filter((m) => !m.blob && m.src && m.type !== 'video');
 
     for (const item of missing) {
       const blob = await mediaBlob(item);
