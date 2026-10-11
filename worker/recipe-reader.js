@@ -17,13 +17,14 @@ const ALLOWED_ORIGINS = [
   'https://kuehmachine.com',
   'http://localhost:8080',
 ];
-/* Free-tier models, best first. The newest is often busy on the free tier,
-   so a busy or rate-limited model hands over to the next. */
-/* Each free model has its own daily allowance (20 reads a day each, reset
-   at midnight Pacific time), so more models means more reads per day. */
-const FREE_MODELS = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
-/* The first model gets longest: reading handwriting can take a while. */
-const attemptTimeout = (index) => (index === 0 ? 75000 : 35000);
+/* Free-tier models, fastest first. The lite models read a note in about
+   8 seconds, against 45-65 for the full ones, with nearly the same result;
+   the full models are the backup. A busy or rate-limited model hands over to
+   the next. Each has its own daily allowance (20 reads a day), so more
+   models means more reads per day. */
+const FREE_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash'];
+/* The lite models get a short leash; the full ones need longer. */
+const attemptTimeout = (index) => (index < 2 ? 25000 : 60000);
 const MAX_IMAGE_BYTES = 14 * 1024 * 1024;
 /* What Gemini reads: photos (including iPhone HEIC) and PDF scans. */
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'];
@@ -50,6 +51,9 @@ Rules:
 - Every step MUST be written in English. Translate her Chinese; never copy Chinese into "steps".
 - Steps are short imperative English sentences without a trailing full stop, e.g. "Boil the pandan leaves and brown sugar for 15 minutes".
 - Notes she adds at the side or bottom belong in the step they describe; put the steps in the order you would cook them.
+- Every quantity in the note (grams, ml, spoons, minutes) must appear somewhere: in an ingredient or in the step that uses it.
+- For "nameEn", prefer the short everyday name Singaporeans use (e.g. Tang Yuan, Orh Kueh), not a description.
+- Use British spelling (colour, flavour) and metric units as written.
 - If the photo is not a recipe, return {"error": "not_a_recipe"}.`;
 
 function corsHeaders(origin) {
