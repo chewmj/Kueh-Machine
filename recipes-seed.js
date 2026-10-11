@@ -240,13 +240,12 @@ const SEED_RECIPES = [
         "src": "./media/fried-honeycomb-2.jpg"
       },
       {
-        "thumb": "./media/thumbs/fried-honeycomb-3.jpg",
-        "cover": "./media/covers/fried-honeycomb-3.jpg",
+        "poster": "./media/fried-honeycomb-3-poster.jpg",
         "id": "fried-honeycomb-3",
-        "type": "image",
+        "type": "video",
         "name": "Frying in progress",
         "description": "",
-        "src": "./media/fried-honeycomb-3.jpg"
+        "src": "./media/fried-honeycomb-3.mp4"
       },
       {
         "poster": "./media/fried-honeycomb-4-poster.jpg",
@@ -268,17 +267,18 @@ const SEED_RECIPES = [
         "poster": "./media/fried-honeycomb-6-poster.jpg",
         "id": "fried-honeycomb-6",
         "type": "video",
-        "name": "Frying in progress",
+        "name": "Mum teaching papa on the tips for making fried honeycomb",
         "description": "",
         "src": "./media/fried-honeycomb-6.mp4"
       },
       {
-        "poster": "./media/fried-honeycomb-7-poster.jpg",
+        "thumb": "./media/thumbs/fried-honeycomb-7.jpg",
+        "cover": "./media/covers/fried-honeycomb-7.jpg",
         "id": "fried-honeycomb-7",
-        "type": "video",
-        "name": "Mum teaching papa on the tips for making fried honeycomb",
+        "type": "image",
+        "name": "Fried honeycombs",
         "description": "",
-        "src": "./media/fried-honeycomb-7.mp4"
+        "src": "./media/fried-honeycomb-7.jpg"
       },
       {
         "thumb": "./media/thumbs/fried-honeycomb-8.jpg",
@@ -290,54 +290,29 @@ const SEED_RECIPES = [
         "src": "./media/fried-honeycomb-8.jpg"
       },
       {
-        "poster": "./media/fried-honeycomb-9-poster.jpg",
+        "thumb": "./media/thumbs/fried-honeycomb-9.jpg",
+        "cover": "./media/covers/fried-honeycomb-9.jpg",
         "id": "fried-honeycomb-9",
-        "type": "video",
+        "type": "image",
         "name": "Fried honeycombs",
         "description": "",
-        "src": "./media/fried-honeycomb-9.mp4"
+        "src": "./media/fried-honeycomb-9.jpg"
       },
       {
-        "poster": "./media/fried-honeycomb-10-poster.jpg",
+        "thumb": "./media/thumbs/fried-honeycomb-10.jpg",
+        "cover": "./media/covers/fried-honeycomb-10.jpg",
         "id": "fried-honeycomb-10",
-        "type": "video",
-        "name": "Fried honeycombs",
-        "description": "",
-        "src": "./media/fried-honeycomb-10.mp4"
-      },
-      {
-        "thumb": "./media/thumbs/fried-honeycomb-11.jpg",
-        "cover": "./media/covers/fried-honeycomb-11.jpg",
-        "id": "fried-honeycomb-11",
-        "type": "image",
-        "name": "Fried honeycombs",
-        "description": "",
-        "src": "./media/fried-honeycomb-11.jpg"
-      },
-      {
-        "thumb": "./media/thumbs/fried-honeycomb-12.jpg",
-        "cover": "./media/covers/fried-honeycomb-12.jpg",
-        "id": "fried-honeycomb-12",
-        "type": "image",
-        "name": "Fried honeycombs",
-        "description": "",
-        "src": "./media/fried-honeycomb-12.jpg"
-      },
-      {
-        "thumb": "./media/thumbs/fried-honeycomb-13.jpg",
-        "cover": "./media/covers/fried-honeycomb-13.jpg",
-        "id": "fried-honeycomb-13",
         "type": "image",
         "name": "Handwritten recipe by my mum",
         "description": "",
-        "src": "./media/fried-honeycomb-13.jpg"
+        "src": "./media/fried-honeycomb-10.jpg"
       },
       {
-        "id": "fried-honeycomb-14",
+        "id": "fried-honeycomb-11",
         "type": "audio",
         "name": "炸蜂窝 Fried honeycomb recipe",
         "description": "",
-        "src": "./media/fried-honeycomb-14.m4a"
+        "src": "./media/fried-honeycomb-11.m4a"
       }
     ]
   },

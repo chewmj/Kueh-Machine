@@ -2206,6 +2206,19 @@ function mediaTypeOf(file) {
   return 'image';
 }
 
+/* A recipe edited in this browser keeps the file names it was saved with.
+   If the built-in files have been renamed since, a thumbnail or poster can
+   point at nothing; then show the copy this browser holds instead. */
+function fallBackToHeldCopy(img, item) {
+  img.addEventListener('error', async () => {
+    if (!item.blob) return;
+    const still = await thumbBlobFor(item);
+    img.removeAttribute('srcset');
+    img.src = mediaUrl(still || item.blob);
+  }, { once: true });
+  return img;
+}
+
 /* Cards and the pop-up gallery show small copies; only the viewer loads the
    full-size file. */
 async function mediaNode(item, alt, { playable = false, large = false } = {}) {
@@ -2224,7 +2237,7 @@ async function mediaNode(item, alt, { playable = false, large = false } = {}) {
     const frame = poster ? null : await thumbBlobFor(item);
     const still = poster || (frame ? mediaUrl(frame) : null);
     const inner = still
-      ? el('img', { src: still, alt, loading: 'lazy', decoding: 'async' })
+      ? fallBackToHeldCopy(el('img', { src: still, alt, loading: 'lazy', decoding: 'async' }), item)
       : el('video', { src: mediaSrc(item), muted: true, playsinline: true, preload: 'metadata' });
     return el('span', { class: 'thumb-wrap' }, inner, el('span', { class: 'play-badge' }, '▶'));
   }
@@ -2238,7 +2251,7 @@ async function mediaNode(item, alt, { playable = false, large = false } = {}) {
      screens; other screens keep the small one. */
   const builtInCover = large && builtInThumb ? safeMediaUrl(item.cover) : null;
   const sharper = builtInCover ? { srcset: `${builtInThumb} 1x, ${builtInCover} 2x` } : {};
-  return el('img', { src: url, ...sharper, alt, loading: 'lazy', decoding: 'async' });
+  return fallBackToHeldCopy(el('img', { src: url, ...sharper, alt, loading: 'lazy', decoding: 'async' }), item);
 }
 
 function ingredientRows(recipe) {
