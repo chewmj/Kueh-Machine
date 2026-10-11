@@ -19,6 +19,12 @@
   box-sizing: border-box;
 }
 
+/* The tilted cards poke a pixel past the edge on the narrowest phones;
+   clip rather than let the page scroll sideways. */
+html {
+  overflow-x: clip;
+}
+
 body {
   margin: 0;
   background-color: var(--paper);
@@ -78,6 +84,11 @@ a {
      stranding "one" at the end of the first line. */
   max-width: 30ch;
   margin: 0 auto;
+}
+
+/* The second half stays together on its own line. */
+.tagline-line {
+  white-space: nowrap;
 }
 
 /* ---------- Connection note ---------- */
