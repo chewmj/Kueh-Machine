@@ -2277,7 +2277,7 @@ async function mediaNode(item, alt, { playable = false, large = false } = {}) {
 
   if (item.type === 'video') {
     if (playable) {
-      return el('video', { src: mediaSrc(item), controls: true, playsinline: true, preload: 'metadata' });
+      return el('video', { muted: true, src: mediaSrc(item), controls: true, playsinline: true, preload: 'metadata' });
     }
 
     /* The same still as the recipe form: a frame from the video this
@@ -2549,7 +2549,11 @@ function renderViewerItem() {
   }
 
   if (item.type === 'video') {
+    /* Opens muted, so it never surprises a room; the speaker button in the
+       controls turns the sound on. */
     const video = document.createElement('video');
+    video.defaultMuted = true;
+    video.muted = true;
     video.src = url;
     video.controls = true;
     video.autoplay = true;
