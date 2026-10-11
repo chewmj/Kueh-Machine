@@ -198,8 +198,8 @@ const SEED_RECIPES = [
         "mine": "Sugar 180g"
       },
       {
-        "her": "盐1/2 tsp",
-        "mine": "1/2 tsp salt"
+        "her": "盐1/4 tsp",
+        "mine": "1/4 tsp salt"
       },
       {
         "her": "花生油 1.5 litre",
