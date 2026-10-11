@@ -75,6 +75,7 @@ const SEED_RECIPES = [
     "media": [
       {
         "thumb": "./media/thumbs/orh-kueh-yam-cake-1.jpg",
+        "cover": "./media/covers/orh-kueh-yam-cake-1.jpg",
         "id": "orh-kueh-yam-cake-1",
         "type": "image",
         "name": "Yam Cake! Orh Kueh!",
@@ -83,6 +84,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/orh-kueh-yam-cake-2.jpg",
+        "cover": "./media/covers/orh-kueh-yam-cake-2.jpg",
         "id": "orh-kueh-yam-cake-2",
         "type": "image",
         "name": "Cutting Yam into slices",
@@ -91,6 +93,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/orh-kueh-yam-cake-3.jpg",
+        "cover": "./media/covers/orh-kueh-yam-cake-3.jpg",
         "id": "orh-kueh-yam-cake-3",
         "type": "image",
         "name": "Ingredients all chopped nicely",
@@ -99,6 +102,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/orh-kueh-yam-cake-4.jpg",
+        "cover": "./media/covers/orh-kueh-yam-cake-4.jpg",
         "id": "orh-kueh-yam-cake-4",
         "type": "image",
         "name": "Stir frying shrimps",
@@ -107,6 +111,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/orh-kueh-yam-cake-5.jpg",
+        "cover": "./media/covers/orh-kueh-yam-cake-5.jpg",
         "id": "orh-kueh-yam-cake-5",
         "type": "image",
         "name": "Mixing the flour mixture and ingredients",
@@ -115,6 +120,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/orh-kueh-yam-cake-6.jpg",
+        "cover": "./media/covers/orh-kueh-yam-cake-6.jpg",
         "id": "orh-kueh-yam-cake-6",
         "type": "image",
         "name": "Add the mixture to a large wok",
@@ -131,6 +137,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/orh-kueh-yam-cake-8.jpg",
+        "cover": "./media/covers/orh-kueh-yam-cake-8.jpg",
         "id": "orh-kueh-yam-cake-8",
         "type": "image",
         "name": "Pour the cooked mixture into a metal tray and smooth the top",
@@ -139,6 +146,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/orh-kueh-yam-cake-9.jpg",
+        "cover": "./media/covers/orh-kueh-yam-cake-9.jpg",
         "id": "orh-kueh-yam-cake-9",
         "type": "image",
         "name": "Smooth the cooked mixture",
@@ -147,6 +155,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/orh-kueh-yam-cake-10.jpg",
+        "cover": "./media/covers/orh-kueh-yam-cake-10.jpg",
         "id": "orh-kueh-yam-cake-10",
         "type": "image",
         "name": "Orh Kueh handwritten recipe",
@@ -209,6 +218,7 @@ const SEED_RECIPES = [
     "media": [
       {
         "thumb": "./media/thumbs/fried-honeycomb-1.jpg",
+        "cover": "./media/covers/fried-honeycomb-1.jpg",
         "id": "fried-honeycomb-1",
         "type": "image",
         "name": "Fried honeycomb",
@@ -217,6 +227,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/fried-honeycomb-2.jpg",
+        "cover": "./media/covers/fried-honeycomb-2.jpg",
         "id": "fried-honeycomb-2",
         "type": "image",
         "name": "Ingredients: egg, pandan extract, flour",
@@ -225,6 +236,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/fried-honeycomb-3.jpg",
+        "cover": "./media/covers/fried-honeycomb-3.jpg",
         "id": "fried-honeycomb-3",
         "type": "image",
         "name": "Frying in progress",
@@ -233,6 +245,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/fried-honeycomb-4.jpg",
+        "cover": "./media/covers/fried-honeycomb-4.jpg",
         "id": "fried-honeycomb-4",
         "type": "image",
         "name": "Fried honeycombs",
@@ -249,6 +262,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/fried-honeycomb-6.jpg",
+        "cover": "./media/covers/fried-honeycomb-6.jpg",
         "id": "fried-honeycomb-6",
         "type": "image",
         "name": "Handwritten recipe by my mum",
@@ -332,6 +346,7 @@ const SEED_RECIPES = [
     "media": [
       {
         "thumb": "./media/thumbs/hainanese-yi-bua-kueh-co-1.jpg",
+        "cover": "./media/covers/hainanese-yi-bua-kueh-co-1.jpg",
         "id": "hainanese-yi-bua-kueh-co-1",
         "type": "image",
         "name": "Yi Bua!",
@@ -340,6 +355,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/hainanese-yi-bua-kueh-co-2.jpg",
+        "cover": "./media/covers/hainanese-yi-bua-kueh-co-2.jpg",
         "id": "hainanese-yi-bua-kueh-co-2",
         "type": "image",
         "name": "Proud mum with her creation",
@@ -348,6 +364,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/hainanese-yi-bua-kueh-co-3.jpg",
+        "cover": "./media/covers/hainanese-yi-bua-kueh-co-3.jpg",
         "id": "hainanese-yi-bua-kueh-co-3",
         "type": "image",
         "name": "Handwritten recipe for Yi Bua",
@@ -410,6 +427,7 @@ const SEED_RECIPES = [
     "media": [
       {
         "thumb": "./media/thumbs/tang-yuan-glutinous-rice-1.jpg",
+        "cover": "./media/covers/tang-yuan-glutinous-rice-1.jpg",
         "id": "tang-yuan-glutinous-rice-1",
         "type": "image",
         "name": "Tang Yuan!",
@@ -418,6 +436,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/tang-yuan-glutinous-rice-2.jpg",
+        "cover": "./media/covers/tang-yuan-glutinous-rice-2.jpg",
         "id": "tang-yuan-glutinous-rice-2",
         "type": "image",
         "name": "Pink and white dough and pandan leaf",
@@ -426,6 +445,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/tang-yuan-glutinous-rice-3.jpg",
+        "cover": "./media/covers/tang-yuan-glutinous-rice-3.jpg",
         "id": "tang-yuan-glutinous-rice-3",
         "type": "image",
         "name": "Rolled tang yuan",
@@ -442,6 +462,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/tang-yuan-glutinous-rice-5.jpg",
+        "cover": "./media/covers/tang-yuan-glutinous-rice-5.jpg",
         "id": "tang-yuan-glutinous-rice-5",
         "type": "image",
         "name": "Cooking rolled tang yuan",
@@ -457,6 +478,7 @@ const SEED_RECIPES = [
       },
       {
         "thumb": "./media/thumbs/tang-yuan-glutinous-rice-7.jpg",
+        "cover": "./media/covers/tang-yuan-glutinous-rice-7.jpg",
         "id": "tang-yuan-glutinous-rice-7",
         "type": "image",
         "name": "Tang yuan handwritten recipe",

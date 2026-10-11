@@ -451,6 +451,8 @@ async function cleanImportedMedia(raw) {
   if (poster && !poster.startsWith('blob:')) entry.poster = poster;
   const thumb = safeMediaUrl(raw.thumb);
   if (thumb && !thumb.startsWith('blob:')) entry.thumb = thumb;
+  const cover = safeMediaUrl(raw.cover);
+  if (cover && !cover.startsWith('blob:')) entry.cover = cover;
 
   const dataUrl = typeof raw.dataUrl === 'string' ? raw.dataUrl : '';
   if (dataUrl) {
@@ -2204,7 +2206,7 @@ function mediaTypeOf(file) {
 
 /* Cards and the pop-up gallery show small copies; only the viewer loads the
    full-size file. */
-async function mediaNode(item, alt, { playable = false } = {}) {
+async function mediaNode(item, alt, { playable = false, large = false } = {}) {
   if (item.type === 'audio') {
     return el('audio', { src: mediaSrc(item), controls: playable });
   }
@@ -2230,7 +2232,11 @@ async function mediaNode(item, alt, { playable = false } = {}) {
   const builtInThumb = safeMediaUrl(item.thumb);
   const thumb = builtInThumb ? null : await thumbBlobFor(item);
   const url = builtInThumb || (thumb ? mediaUrl(thumb) : mediaSrc(item));
-  return el('img', { src: url, alt, loading: 'lazy', decoding: 'async' });
+  /* A card's big cover photo also ships 800px wide for sharp (retina)
+     screens; other screens keep the small one. */
+  const builtInCover = large && builtInThumb ? safeMediaUrl(item.cover) : null;
+  const sharper = builtInCover ? { srcset: `${builtInThumb} 1x, ${builtInCover} 2x` } : {};
+  return el('img', { src: url, ...sharper, alt, loading: 'lazy', decoding: 'async' });
 }
 
 function ingredientRows(recipe) {
@@ -2304,7 +2310,7 @@ async function buildRecipeCard(recipe, index, total) {
   const recordings = media.length - visual.length;
 
   const cover = visual.find((m) => m.type === 'image') || visual[0];
-  const coverNode = cover ? el('div', { class: 'card-cover' }, await mediaNode(cover, recipe.nameEn)) : null;
+  const coverNode = cover ? el('div', { class: 'card-cover' }, await mediaNode(cover, recipe.nameEn, { large: true })) : null;
 
   const rest = visual.filter((m) => m !== cover).slice(0, 4);
   const remaining = visual.length - 1 - rest.length;
