@@ -425,8 +425,15 @@ body.modal-open {
   color: var(--accent);
 }
 
+/* In the middle of the usual two lines; level with the title once extra
+   text makes the banner taller (.tall, set by setupNoteFill). */
 .note-fill .mini-btn {
   flex: 0 0 auto;
+  align-self: center;
+}
+
+.note-fill.tall .mini-btn {
+  align-self: flex-start;
   margin-top: -0.25rem;
 }
 
@@ -480,7 +487,7 @@ body.modal-open {
 /* The ✕ that cancels the read. */
 .note-fill-close {
   flex: 0 0 auto;
-  margin-top: -0.38rem;
+  align-self: center;
   width: 2rem;
   height: 2rem;
   display: flex;
@@ -492,6 +499,11 @@ body.modal-open {
   border-radius: 3px;
   color: var(--ink-soft);
   cursor: pointer;
+}
+
+.note-fill.tall .note-fill-close {
+  align-self: flex-start;
+  margin-top: -0.38rem;
 }
 
 .note-fill-close[hidden] {

@@ -3195,6 +3195,20 @@ function setupNoteFill() {
   const input = document.getElementById('note-fill-file');
   box.querySelector('.note-fill-icon').innerHTML = ICON.camera;
   box.hidden = false;
+
+  /* The button sits in the middle of the usual two lines (title and one
+     line under it); once more text makes the banner taller, it moves up
+     to stay level with the title. */
+  const text = box.querySelector('.note-fill-text');
+  const title = box.querySelector('.note-fill-title');
+  const status = document.getElementById('note-fill-status');
+  const fitButton = () => {
+    const oneLine = parseFloat(getComputedStyle(status).lineHeight) || 0;
+    const twoLines = title.offsetHeight + oneLine * 1.5;
+    box.classList.toggle('tall', text.offsetHeight > twoLines);
+  };
+  if ('ResizeObserver' in window) new ResizeObserver(fitButton).observe(text);
+  fitButton();
   document.getElementById('form-or').hidden = false;
   button.addEventListener('click', () => input.click());
   document.getElementById('note-fill-cancel').addEventListener('click', () => stopNoteReading('stopped'));
