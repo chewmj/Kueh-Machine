@@ -3156,12 +3156,15 @@ function stopNoteReading(reason = 'stopped') {
 }
 
 /* ---------- Notes already read ----------
-   A photo read before in this browser fills the form again straight away,
+   A photo read before in this browser fills the form again in a few seconds,
    without asking the reader, so trying the same note twice (a rehearsal,
    then the real thing) doesn't spend the free daily reads. Kept by a
    fingerprint of the file, the last few only. */
 const NOTE_READS_KEY = 'tasteOfHome.noteReads';
 const NOTE_READS_KEPT = 12;
+/* A remembered read still takes a few seconds, like a quick real one, so
+   the reading paper shows rather than the form jumping full at once. */
+const NOTE_REREAD_MS = [3000, 5000];
 
 async function noteFingerprint(file) {
   try {
@@ -3238,7 +3241,15 @@ async function readHandwrittenNote(file) {
     if (stopped()) return;
     const fingerprint = await noteFingerprint(file);
     let result = earlierNoteRead(fingerprint);
-    if (!result) {
+    if (result) {
+      const [shortest, longest] = NOTE_REREAD_MS;
+      await new Promise((resolve) => {
+        const timer = setTimeout(resolve, shortest + Math.random() * (longest - shortest));
+        /* ✕ still cancels straight away. */
+        reading.controller.signal.addEventListener('abort', () => { clearTimeout(timer); resolve(); }, { once: true });
+      });
+      if (stopped()) return;
+    } else {
       const controller = reading.controller;
       const timer = setTimeout(() => {
         reading.reason = 'timeout';
