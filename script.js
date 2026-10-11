@@ -289,7 +289,10 @@ async function syncSeedRecipes() {
 
   for (const recipe of changed) await dbPut('recipes', recipe);
   /* Thumbnails are keyed by media id, and a refreshed file may differ. */
-  for (const id of staleMediaIds) await dbDelete('thumbs', id);
+  for (const id of staleMediaIds) {
+    await dbDelete('thumbs', id);
+    await dbDelete('thumbs', coverKey(id));
+  }
   thumbIndex = null;
 
   SEED_RECIPES.forEach((r) => deliveredIds.add(r.id));
@@ -2200,12 +2203,19 @@ function videoFrameBlob(blob) {
   });
 }
 
-async function thumbBlobFor(item) {
+/* A card's cover is shown much bigger than a thumbnail, so a photo added in
+   the browser also gets a cover-sized copy, cached under its own key. */
+const COVER_WIDTH = 1200;
+const coverKey = (id) => `${id}#cover`;
+
+async function thumbBlobFor(item, { large = false } = {}) {
   if (item.type === 'audio') return null;
   if (!item.blob) return null;
+  if (large && item.type !== 'image') return thumbBlobFor(item);
 
+  const key = large ? coverKey(item.id) : item.id;
   const index = await loadThumbIndex();
-  const cached = index.get(item.id);
+  const cached = index.get(key);
   if (cached) return cached;
 
   if (item.type === 'video') {
@@ -2219,7 +2229,9 @@ async function thumbBlobFor(item) {
 
   try {
     const bitmap = await createImageBitmap(item.blob);
-    const scale = Math.min(1, THUMB_MAX / Math.max(bitmap.width, bitmap.height));
+    const scale = large
+      ? Math.min(1, COVER_WIDTH / bitmap.width)
+      : Math.min(1, THUMB_MAX / Math.max(bitmap.width, bitmap.height));
     const width = Math.round(bitmap.width * scale);
     const height = Math.round(bitmap.height * scale);
 
@@ -2228,8 +2240,8 @@ async function thumbBlobFor(item) {
     bitmap.close();
 
     const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.82 });
-    index.set(item.id, blob);
-    await dbPut('thumbs', { id: item.id, blob });
+    index.set(key, blob);
+    await dbPut('thumbs', { id: key, blob });
     return blob;
   } catch {
     /* Older browser, or an image it can't decode: fall back to the original. */
@@ -2286,9 +2298,15 @@ async function mediaNode(item, alt, { playable = false, large = false } = {}) {
   const builtInThumb = safeMediaUrl(item.thumb);
   const thumb = builtInThumb ? null : await thumbBlobFor(item);
   const url = builtInThumb || (thumb ? mediaUrl(thumb) : mediaSrc(item));
+  if (large && !builtInThumb && item.blob) {
+    /* A photo added in this browser: its own cover-sized copy. */
+    const cover = await thumbBlobFor(item, { large: true });
+    return el('img', { src: cover ? mediaUrl(cover) : url, alt, loading: 'lazy', decoding: 'async' });
+  }
   /* A card's big cover photo also ships 800px wide for sharp (retina)
-     screens; other screens keep the small one. */
-  const builtInCover = large && builtInThumb ? safeMediaUrl(item.cover) : null;
+     screens; other screens keep the small one. A copy saved before covers
+     existed uses the full photo instead. */
+  const builtInCover = large && builtInThumb ? safeMediaUrl(item.cover) || safeMediaUrl(item.src) : null;
   const sharper = builtInCover ? { srcset: `${builtInThumb} 1x, ${builtInCover} 2x` } : {};
   return fallBackToHeldCopy(el('img', { src: url, ...sharper, alt, loading: 'lazy', decoding: 'async' }), item);
 }
@@ -2713,7 +2731,10 @@ function setupRecipeCardActions() {
       });
       if (!ok) return;
       await dbDelete('recipes', card.dataset.id);
-      for (const id of thumbIds) await dbDelete('thumbs', id);
+      for (const id of thumbIds) {
+        await dbDelete('thumbs', id);
+        await dbDelete('thumbs', coverKey(id));
+      }
       renderRecipes();
     } else if (e.target.closest('.edit-recipe')) {
       const recipe = await dbGet('recipes', card.dataset.id);
