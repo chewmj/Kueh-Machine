@@ -222,13 +222,13 @@ const SEED_RECIPES = [
     "createdAt": 1787502951009,
     "media": [
       {
-        "thumb": "./media/thumbs/fried-honeycomb-1.jpg",
-        "cover": "./media/covers/fried-honeycomb-1.jpg",
-        "id": "fried-honeycomb-1",
+        "thumb": "./media/thumbs/fried-honeycomb-12.jpg",
+        "cover": "./media/covers/fried-honeycomb-12.jpg",
+        "id": "fried-honeycomb-12",
         "type": "image",
         "name": "Fried honeycomb",
         "description": "",
-        "src": "./media/fried-honeycomb-1.jpg"
+        "src": "./media/fried-honeycomb-12.jpg"
       },
       {
         "thumb": "./media/thumbs/fried-honeycomb-2.jpg",
