@@ -235,7 +235,7 @@ const SEED_RECIPES = [
         "cover": "./media/covers/fried-honeycomb-2.jpg",
         "id": "fried-honeycomb-2",
         "type": "image",
-        "name": "Ingredients: egg, pandan extract, flour",
+        "name": "Ingredients: eggs, pandan extract, flour",
         "description": "",
         "src": "./media/fried-honeycomb-2.jpg"
       },
@@ -243,7 +243,7 @@ const SEED_RECIPES = [
         "poster": "./media/fried-honeycomb-3-poster.jpg",
         "id": "fried-honeycomb-3",
         "type": "video",
-        "name": "Metal mould dip in batter",
+        "name": "Dipping the metal mould in batter",
         "description": "Allow the batter to stick to the mould and fry it in hot oil.",
         "src": "./media/fried-honeycomb-3.mp4"
       },
@@ -256,14 +256,6 @@ const SEED_RECIPES = [
         "src": "./media/fried-honeycomb-4.mp4"
       },
       {
-        "poster": "./media/fried-honeycomb-5-poster.jpg",
-        "id": "fried-honeycomb-5",
-        "type": "video",
-        "name": "Flipping the honeycomb",
-        "description": "",
-        "src": "./media/fried-honeycomb-5.mp4"
-      },
-      {
         "poster": "./media/fried-honeycomb-6-poster.jpg",
         "id": "fried-honeycomb-6",
         "type": "video",
@@ -272,20 +264,19 @@ const SEED_RECIPES = [
         "src": "./media/fried-honeycomb-6.mp4"
       },
       {
-        "thumb": "./media/thumbs/fried-honeycomb-7.jpg",
-        "cover": "./media/covers/fried-honeycomb-7.jpg",
-        "id": "fried-honeycomb-7",
-        "type": "image",
-        "name": "Fried honeycombs",
+        "poster": "./media/fried-honeycomb-5-poster.jpg",
+        "id": "fried-honeycomb-5",
+        "type": "video",
+        "name": "Flipping the honeycomb",
         "description": "",
-        "src": "./media/fried-honeycomb-7.jpg"
+        "src": "./media/fried-honeycomb-5.mp4"
       },
       {
         "thumb": "./media/thumbs/fried-honeycomb-8.jpg",
         "cover": "./media/covers/fried-honeycomb-8.jpg",
         "id": "fried-honeycomb-8",
         "type": "image",
-        "name": "Fried honeycombs",
+        "name": "Fried honeycombs!",
         "description": "",
         "src": "./media/fried-honeycomb-8.jpg"
       },
@@ -294,7 +285,7 @@ const SEED_RECIPES = [
         "cover": "./media/covers/fried-honeycomb-9.jpg",
         "id": "fried-honeycomb-9",
         "type": "image",
-        "name": "Fried honeycombs",
+        "name": "Nicely packed honeycombs, ready for CNY gifting",
         "description": "",
         "src": "./media/fried-honeycomb-9.jpg"
       },
