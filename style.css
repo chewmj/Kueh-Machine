@@ -3036,3 +3036,8 @@ body:has(#recipe-form-overlay:not(.hidden)) .toast {
     margin: 16mm;
   }
 }
+
+/* A built-in file that can no longer be found: the tile stays plain paper. */
+img.media-missing {
+  visibility: hidden;
+}

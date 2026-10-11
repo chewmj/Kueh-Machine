@@ -1,0 +1,21 @@
+# Files kept in media/ under the names they had in earlier versions of the
+# site. A recipe edited in someone's browser keeps the file names it was
+# saved with, so if a rebuild renames a photo, that copy would lose it.
+# build-seed.py puts these back after clearing media/, unless a new file
+# has taken the name. One path per line, relative to the project.
+media/fried-honeycomb-1.jpg
+media/thumbs/fried-honeycomb-1.jpg
+media/covers/fried-honeycomb-1.jpg
+media/fried-honeycomb-3.jpg
+media/thumbs/fried-honeycomb-3.jpg
+media/covers/fried-honeycomb-3.jpg
+media/fried-honeycomb-4.jpg
+media/thumbs/fried-honeycomb-4.jpg
+media/covers/fried-honeycomb-4.jpg
+media/fried-honeycomb-6.jpg
+media/thumbs/fried-honeycomb-6.jpg
+media/covers/fried-honeycomb-6.jpg
+media/fried-honeycomb-7.jpg
+media/thumbs/fried-honeycomb-7.jpg
+media/covers/fried-honeycomb-7.jpg
+media/fried-honeycomb-7.m4a

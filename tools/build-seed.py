@@ -174,6 +174,17 @@ def main():
             if item['_bytes'] is None:
                 print(f"  ! Skipping \"{item.get('name')}\" in {recipe['nameEn']}: no file in the backup")
 
+    # Files listed in tools/legacy-media.txt survive the clean-out (see there).
+    legacy = {}
+    legacy_list = os.path.join(ROOT, 'tools', 'legacy-media.txt')
+    if os.path.exists(legacy_list):
+        with open(legacy_list) as f:
+            for line in f:
+                rel = line.strip()
+                if rel and not rel.startswith('#') and os.path.exists(os.path.join(ROOT, rel)):
+                    with open(os.path.join(ROOT, rel), 'rb') as g:
+                        legacy[rel] = g.read()
+
     # Start from a clean media folder so deleted photos don't linger in the zip.
     if os.path.isdir(MEDIA_DIR):
         shutil.rmtree(MEDIA_DIR)
@@ -274,6 +285,13 @@ const SEED_RECIPES = """
 
     with open(SEED_FILE, 'w') as f:
         f.write(header + body + ';\n\nconst SEED_GLOSSARY = ' + gloss + ';\n')
+
+    for rel, data in legacy.items():
+        path = os.path.join(ROOT, rel)
+        if not os.path.exists(path):
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, 'wb') as f:
+                f.write(data)
 
     bump_asset_version()
 

@@ -2260,10 +2260,15 @@ function mediaTypeOf(file) {
    point at nothing; then show the copy this browser holds instead. */
 function fallBackToHeldCopy(img, item) {
   img.addEventListener('error', async () => {
-    if (!item.blob) return;
-    const still = await thumbBlobFor(item);
     img.removeAttribute('srcset');
-    img.src = mediaUrl(still || item.blob);
+    if (item.blob) {
+      const still = await thumbBlobFor(item);
+      img.src = mediaUrl(still || item.blob);
+    } else {
+      /* Nothing to show: a plain paper tile rather than a broken image. */
+      img.alt = '';
+      img.classList.add('media-missing');
+    }
   }, { once: true });
   return img;
 }
