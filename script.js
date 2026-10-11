@@ -131,7 +131,9 @@ function makeId() {
 
 /* Replaces window.confirm so the question is asked on the same paper as
    everything else. Resolves true only if they pick the confirm button. */
-function askConfirm({ title, body, confirmLabel = 'Delete', cancelLabel = 'Keep it' }) {
+/* Resolves true for the confirm button and false for the other one.
+   Escape or a tap outside gives `dismissed`, false unless asked otherwise. */
+function askConfirm({ title, body, confirmLabel = 'Delete', cancelLabel = 'Keep it', confirmClass = 'danger-btn', dismissed = false }) {
   const overlay = document.getElementById('confirm-overlay');
   const okBtn = document.getElementById('confirm-ok');
   const cancelBtn = document.getElementById('confirm-cancel');
@@ -140,6 +142,7 @@ function askConfirm({ title, body, confirmLabel = 'Delete', cancelLabel = 'Keep 
   document.getElementById('confirm-title').textContent = title;
   document.getElementById('confirm-body').textContent = body;
   okBtn.textContent = confirmLabel;
+  okBtn.className = confirmClass;
   cancelBtn.textContent = cancelLabel;
 
   overlay.classList.remove('hidden');
@@ -162,9 +165,9 @@ function askConfirm({ title, body, confirmLabel = 'Delete', cancelLabel = 'Keep 
 
     function onOk() { finish(true); }
     function onCancel() { finish(false); }
-    function onBackdrop(e) { if (e.target === overlay) finish(false); }
+    function onBackdrop(e) { if (e.target === overlay) finish(dismissed); }
     function onKey(e) {
-      if (e.key === 'Escape') { e.stopPropagation(); finish(false); }
+      if (e.key === 'Escape') { e.stopPropagation(); finish(dismissed); }
     }
 
     okBtn.addEventListener('click', onOk);
@@ -977,9 +980,10 @@ function fillFormForEdit(recipe) {
 }
 
 /* ---------- Closing without saving ----------
-   Tapping outside the form (or ✕) never loses work: a new recipe is saved
-   as a draft, labelled as one on its card until Save recipe is pressed, and
-   changes to an existing recipe are saved as they are. */
+   Tapping outside the form (or ✕) with unsaved work asks first: save it
+   (a new recipe as a draft, labelled as one on its card until Save recipe
+   is pressed; an existing one with its changes) or don't. Tapping outside
+   the question goes back to the form. */
 let formBaseline = '';
 let formClosing = false;
 
@@ -1030,16 +1034,32 @@ async function closeRecipeForm({ saved = false } = {}) {
   try {
     if (!saved && formFingerprint(readForm()) !== formBaseline) {
       const asDraft = !editingRecipe || Boolean(editingRecipe.draft);
-      try {
-        await saveRecipeFromForm({ draft: asDraft });
-      } catch (err) {
-        /* Couldn't save (storage blocked or full): stay open, so nothing's lost. */
-        console.warn('Could not save on close:', err);
-        showToast("This browser couldn't save it. Keep the form open and try Save recipe, or back up first.");
-        return;
+      const question = !editingRecipe
+        ? {
+          title: 'Save this recipe as a draft?',
+          body: "It'll be on the page marked Draft, ready to finish whenever you're back.",
+          confirmLabel: 'Save as draft',
+        }
+        : {
+          title: asDraft ? 'Save your changes to this draft?' : 'Save your changes?',
+          body: `Your changes to “${dishName(editingRecipe)}” haven't been saved yet.`,
+          confirmLabel: asDraft ? 'Save draft' : 'Save changes',
+        };
+      const save = await askConfirm({ ...question, cancelLabel: "Don't save", confirmClass: 'primary-btn', dismissed: null });
+      if (save === null) return; // tapped outside the question: back to the form
+
+      if (save) {
+        try {
+          await saveRecipeFromForm({ draft: asDraft });
+        } catch (err) {
+          /* Couldn't save (storage blocked or full): stay open, so nothing's lost. */
+          console.warn('Could not save on close:', err);
+          showToast("This browser couldn't save it. Keep the form open and try Save recipe, or back up first.");
+          return;
+        }
+        showToast(asDraft ? 'Saved as a draft. Finish it any time from its card.' : 'Changes saved.');
+        renderRecipes();
       }
-      showToast(asDraft ? 'Saved as a draft. Finish it any time from its card.' : 'Changes saved.');
-      renderRecipes();
     }
     overlay.classList.add('hidden');
     document.body.classList.remove('modal-open');
