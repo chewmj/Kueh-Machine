@@ -1148,6 +1148,23 @@ body.modal-open {
   }
 }
 
+/* A recipe card just saved: a red outline that fades, after the page has
+   scrolled to it. */
+.recipe-card.just-saved {
+  animation: card-saved 2.8s ease-out;
+}
+
+@keyframes card-saved {
+  0%, 45% {
+    outline: 2px solid var(--accent);
+    outline-offset: 6px;
+  }
+  100% {
+    outline: 2px solid rgba(183, 71, 42, 0);
+    outline-offset: 6px;
+  }
+}
+
 /* Fields the handwriting reader just filled glow the same way. */
 .recipe-form .just-filled {
   animation: field-filled 2.2s ease-out;
@@ -1162,7 +1179,8 @@ body.modal-open {
 
 @media (prefers-reduced-motion: reduce) {
   .media-row.just-added,
-  .recipe-form .just-filled {
+  .recipe-form .just-filled,
+  .recipe-card.just-saved {
     animation-duration: 0.01s;
   }
 }

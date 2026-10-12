@@ -1032,6 +1032,7 @@ async function closeRecipeForm({ saved = false } = {}) {
   if (formClosing || overlay.classList.contains('hidden')) return;
   formClosing = true;
   let message = '';
+  let savedId = null;
   try {
     if (!saved && formFingerprint(readForm()) !== formBaseline) {
       const asDraft = !editingRecipe || Boolean(editingRecipe.draft);
@@ -1051,7 +1052,7 @@ async function closeRecipeForm({ saved = false } = {}) {
 
       if (save) {
         try {
-          await saveRecipeFromForm({ draft: asDraft });
+          savedId = (await saveRecipeFromForm({ draft: asDraft })).id;
         } catch (err) {
           /* Couldn't save (storage blocked or full): stay open, so nothing's lost. */
           console.warn('Could not save on close:', err);
@@ -1059,14 +1060,16 @@ async function closeRecipeForm({ saved = false } = {}) {
           return;
         }
         message = asDraft ? 'Saved as a draft. Finish it any time from its card.' : 'Changes saved.';
-        renderRecipes();
       }
     }
     overlay.classList.add('hidden');
     document.body.classList.remove('modal-open');
     fillFormForEdit(null);
     /* Shown once the form has gone, so it sits at the foot of the page. */
-    if (message) showToast(message);
+    if (message) {
+      await renderRecipes();
+      showRecipeSaved(savedId, message);
+    }
   } finally {
     formClosing = false;
   }
@@ -1097,9 +1100,25 @@ async function handleRecipeSubmit(e) {
     showDishNameError();
     return;
   }
-  await saveRecipeFromForm({ draft: false });
-  closeRecipeForm({ saved: true });
-  renderRecipes();
+  const isNew = !editingRecipe || Boolean(editingRecipe.draft);
+  const recipe = await saveRecipeFromForm({ draft: false });
+  await closeRecipeForm({ saved: true });
+  await renderRecipes();
+  showRecipeSaved(recipe.id, isNew ? `Recipe added: ${dishName(recipe)}` : 'Changes saved.');
+}
+
+/* After a save: say so, bring the card into view, and outline it briefly
+   so it's clear which one it is. */
+function showRecipeSaved(id, message) {
+  showToast(message);
+  const card = document.querySelector(`#recipe-grid .recipe-card[data-id="${CSS.escape(id)}"]`);
+  if (!card) return;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  card.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
+  card.classList.remove('just-saved');
+  void card.offsetWidth; // restart the outline if it's still showing
+  card.classList.add('just-saved');
+  card.addEventListener('animationend', () => card.classList.remove('just-saved'), { once: true });
 }
 
 /* The form as a recipe, saved. A draft may not have a name yet. */
