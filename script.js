@@ -1031,6 +1031,7 @@ async function closeRecipeForm({ saved = false } = {}) {
   const overlay = document.getElementById('recipe-form-overlay');
   if (formClosing || overlay.classList.contains('hidden')) return;
   formClosing = true;
+  let message = '';
   try {
     if (!saved && formFingerprint(readForm()) !== formBaseline) {
       const asDraft = !editingRecipe || Boolean(editingRecipe.draft);
@@ -1057,13 +1058,15 @@ async function closeRecipeForm({ saved = false } = {}) {
           showToast("This browser couldn't save it. Keep the form open and try Save recipe, or back up first.");
           return;
         }
-        showToast(asDraft ? 'Saved as a draft. Finish it any time from its card.' : 'Changes saved.');
+        message = asDraft ? 'Saved as a draft. Finish it any time from its card.' : 'Changes saved.';
         renderRecipes();
       }
     }
     overlay.classList.add('hidden');
     document.body.classList.remove('modal-open');
     fillFormForEdit(null);
+    /* Shown once the form has gone, so it sits at the foot of the page. */
+    if (message) showToast(message);
   } finally {
     formClosing = false;
   }
@@ -1396,6 +1399,12 @@ let toastTimer = null;
 function showToast(message) {
   const toast = document.getElementById('toast');
   toast.textContent = message;
+  /* With the recipe form open, sit just above its Save bar, wherever that
+     is on screen, so the message never covers the button. */
+  const actions = document.querySelector('#recipe-form-overlay:not(.hidden) .form-actions');
+  toast.style.bottom = actions
+    ? `${Math.max(24, window.innerHeight - actions.getBoundingClientRect().top + 12)}px`
+    : '';
   toast.classList.remove('hidden');
   clearTimeout(toastTimer);
   /* Longer messages (instructions, not just "Saved") stay up long enough to read. */
@@ -3119,6 +3128,37 @@ function fillFormFromNote(recipe) {
   if (!recipe.steps.length) addStepRow();
 }
 
+/* After a note fills the form: say what came in, and let everything the
+   reader wrote glow briefly, so it's clear what to check. */
+function showNoteFilled(recipe, notePhotoId) {
+  const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const parts = [];
+  if (recipe.ingredients.length) parts.push(plural(recipe.ingredients.length, 'ingredient'));
+  if (recipe.steps.length) parts.push(plural(recipe.steps.length, 'step'));
+  showToast(parts.length
+    ? `Filled in from the note: ${parts.join(' and ')}. Check it over before saving.`
+    : 'Filled in from the note. Check it over before saving.');
+
+  const filled = [
+    recipe.nameEn ? document.getElementById('field-name-en') : null,
+    recipe.nameCn ? document.getElementById('field-name-cn') : null,
+    ...document.querySelectorAll('.ing-her, .ing-mine, .step-text'),
+  ].filter((field) => field && field.value.trim());
+  filled.forEach((field) => {
+    field.classList.remove('just-filled');
+    void field.offsetWidth; // restart the glow if a second note fills it again
+    field.classList.add('just-filled');
+    field.addEventListener('animationend', () => field.classList.remove('just-filled'), { once: true });
+  });
+  if (notePhotoId) {
+    const row = document.querySelector(`#existing-media-preview .media-row[data-media-id="${CSS.escape(notePhotoId)}"]`);
+    if (row) {
+      row.classList.add('just-added');
+      row.addEventListener('animationend', () => row.classList.remove('just-added'), { once: true });
+    }
+  }
+}
+
 /* The read in progress, if any: lets the button (or closing the form)
    stop it. */
 let noteReading = null;
@@ -3318,11 +3358,14 @@ async function readHandwrittenNote(file) {
     fillFormFromNote(result);
     /* The note itself joins the recipe's photos, when it's a photo every
        browser can show. */
+    let notePhotoId = null;
     if (prepared.showable) {
-      currentMedia.push({ id: makeId(), type: 'image', blob: photo, name: 'Handwritten recipe', description: '' });
+      notePhotoId = makeId();
+      currentMedia.push({ id: notePhotoId, type: 'image', blob: photo, name: 'Handwritten recipe', description: '' });
       renderExistingMediaPreview();
     }
     setNoteStatus('Filled in from the note. Check it over and edit anything before saving.', result.unsure || []);
+    showNoteFilled(result, notePhotoId);
   } catch (err) {
     if (stopped()) return;
     console.warn('Could not read the note:', err);

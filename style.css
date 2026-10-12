@@ -1148,8 +1148,21 @@ body.modal-open {
   }
 }
 
+/* Fields the handwriting reader just filled glow the same way. */
+.recipe-form .just-filled {
+  animation: field-filled 2.2s ease-out;
+}
+
+@keyframes field-filled {
+  0%, 40% {
+    background-color: rgba(183, 71, 42, 0.08);
+    border-color: var(--accent);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .media-row.just-added {
+  .media-row.just-added,
+  .recipe-form .just-filled {
     animation-duration: 0.01s;
   }
 }
@@ -2670,11 +2683,6 @@ body.modal-open {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
   z-index: 200;
   transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-/* While the recipe form is open, sit above its Save bar instead of on it. */
-body:has(#recipe-form-overlay:not(.hidden)) .toast {
-  bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
 }
 
 .toast.hidden {
